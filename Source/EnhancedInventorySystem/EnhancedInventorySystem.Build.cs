@@ -1,53 +1,38 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
+using System.IO;
 using UnrealBuildTool;
 
 public class EnhancedInventorySystem : ModuleRules
 {
 	public EnhancedInventorySystem(ReadOnlyTargetRules Target) : base(Target)
 	{
-		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
+		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 		
-		PublicIncludePaths.AddRange(
-			new string[] {
-				// ... add public include paths required here ...
-			}
-			);
-				
+		PublicDependencyModuleNames.AddRange(new[]
+		{
+			"Core",
+			"GameplayTags",
+			"ModularGameplay"
+		});
+
+		PrivateDependencyModuleNames.AddRange(new[]
+		{
+			"CoreUObject",
+			"Engine",
+			"Slate",
+			"SlateCore",
+			"NetCore"
+		});
 		
-		PrivateIncludePaths.AddRange(
-			new string[] {
-				// ... add other private include paths required here ...
-			}
-			);
-			
+		PublicIncludePaths.Add(Path.Combine(ModuleDirectory, "Public"));
+		PublicIncludePaths.Add(Path.Combine(ModuleDirectory, "Public/Framework"));
+		PublicIncludePaths.Add(Path.Combine(ModuleDirectory, "Public/Framework/Inventory"));
+		PublicIncludePaths.Add(Path.Combine(ModuleDirectory, "Public/Framework/Item"));
 		
-		PublicDependencyModuleNames.AddRange(
-			new string[]
-			{
-				"Core",
-				// ... add other public dependencies that you statically link with here ...
-			}
-			);
-			
-		
-		PrivateDependencyModuleNames.AddRange(
-			new string[]
-			{
-				"CoreUObject",
-				"Engine",
-				"Slate",
-				"SlateCore",
-				// ... add private dependencies that you statically link with here ...	
-			}
-			);
-		
-		
-		DynamicallyLoadedModuleNames.AddRange(
-			new string[]
-			{
-				// ... add any modules that your module loads dynamically here ...
-			}
-			);
+		PrivateIncludePaths.Add(Path.Combine(ModuleDirectory, "Private"));
+		PrivateIncludePaths.Add(Path.Combine(ModuleDirectory, "Private/Framework"));
+		PrivateIncludePaths.Add(Path.Combine(ModuleDirectory, "Private/Framework/Inventory"));
+		PrivateIncludePaths.Add(Path.Combine(ModuleDirectory, "Private/Framework/Item"));
 	}
 }
