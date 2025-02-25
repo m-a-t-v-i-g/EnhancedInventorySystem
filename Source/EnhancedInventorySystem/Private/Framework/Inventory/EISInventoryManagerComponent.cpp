@@ -42,7 +42,6 @@ UEISInventoryManagerComponent::UEISInventoryManagerComponent(const FObjectInitia
 	Super(ObjectInitializer), ReplicatedContainers(this)
 {
 	PrimaryComponentTick.bCanEverTick = false;
-	bWantsInitializeComponent = true;
 
 	SetIsReplicatedByDefault(true);
 }
@@ -80,9 +79,41 @@ void UEISInventoryManagerComponent::RemoveReplicatedContainer(UEISItemContainer*
 	ReplicatedContainers.RemoveEntry(Container);
 }
 
+void UEISInventoryManagerComponent::SetupInventoryManager(APawn* OwnPawn)
+{
+	if (OwnPawn != nullptr)
+	{
+		auto InventoryComponent = OwnPawn->GetComponentByClass<UEISInventoryComponent>();
+		if (!InventoryComponent)
+		{
+			return;
+		}
+
+		if (UEISItemContainer* ItemsContainer = InventoryComponent->GetItemContainer())
+		{
+			if (HasAuthority())
+			{
+				AddReplicatedContainer(ItemsContainer);
+			}
+		}
+	}
+	
+	K2_OnSetupInventoryManager(OwnPawn);
+}
+
+void UEISInventoryManagerComponent::ResetInventoryManager()
+{
+	ReplicatedContainers.Clear();
+
+	K2_OnResetInventoryManager();
+}
+
 void UEISInventoryManagerComponent::BeginPlay()
 {
-	SetupInventoryManager();
+	if (bInitializeOnBeginPlay)
+	{
+		SetupInventoryManager(GetPawn<APawn>());
+	}
 	
 	Super::BeginPlay();
 }
@@ -92,33 +123,6 @@ void UEISInventoryManagerComponent::EndPlay(const EEndPlayReason::Type EndPlayRe
 	ResetInventoryManager();
 	
 	Super::EndPlay(EndPlayReason);
-}
-
-void UEISInventoryManagerComponent::SetupInventoryManager()
-{
-	auto Pawn = GetPawn<APawn>();
-	if (Pawn != nullptr)
-	{
-		if (auto InventoryComponent = Pawn->GetComponentByClass<UEISInventoryComponent>())
-		{
-			if (UEISItemContainer* ItemsContainer = InventoryComponent->GetItemContainer())
-			{
-				if (HasAuthority())
-				{
-					AddReplicatedContainer(ItemsContainer);
-				}
-			}
-		}
-	}
-
-	K2_OnSetupInventoryManager();
-}
-
-void UEISInventoryManagerComponent::ResetInventoryManager()
-{
-	ReplicatedContainers.Clear();
-
-	K2_OnResetInventoryManager();
 }
 
 void UEISInventoryManagerComponent::Container_AddItem(UObject* FromSource, UEISItemContainer* ToContainer,
@@ -138,6 +142,8 @@ void UEISInventoryManagerComponent::Container_AddItem(UObject* FromSource, UEISI
 		UEISInventoryFunctionLibrary::Container_AddItem(ToContainer, Item);
 		RemoveItemFromSource(FromSource, Item);
 	}
+
+	ServerContainerAddItem(FromSource, ToContainer, Item);
 }
 
 void UEISInventoryManagerComponent::Container_RemoveItem(UEISItemContainer* Container, UEISItem* Item)
@@ -154,6 +160,8 @@ void UEISInventoryManagerComponent::Container_RemoveItem(UEISItemContainer* Cont
 	{
 		UEISInventoryFunctionLibrary::Container_RemoveItem(Container, Item);
 	}
+
+	ServerContainerRemoveItem(Container, Item);
 }
 
 void UEISInventoryManagerComponent::Container_StackItem(UObject* FromSource, UEISItemContainer* InContainer,
@@ -174,6 +182,8 @@ void UEISInventoryManagerComponent::Container_StackItem(UObject* FromSource, UEI
 		UEISInventoryFunctionLibrary::Container_StackItem(InContainer, SourceItem, TargetItem);
 		RemoveItemFromSource(FromSource, SourceItem);
 	}
+
+	ServerContainerStackItem(FromSource, InContainer, SourceItem, TargetItem);
 }
 
 void UEISInventoryManagerComponent::Container_SplitItem(UEISItemContainer* Container, UEISItem* Item, int Amount)
@@ -188,8 +198,16 @@ void UEISInventoryManagerComponent::Container_SplitItem(UEISItemContainer* Conta
 	
 	if (!HasAuthority() && IsLocalController())
 	{
-		UEISInventoryFunctionLibrary::Container_SplitItem(Container, Item, Amount);
+		if (Container->CanAddItem(Item))
+		{
+			if (Item->GetAmount() > 1 && Item->GetAmount() > Amount)
+			{
+				Item->RemoveAmount(Amount);
+			}
+		}
 	}
+
+	ServerSplitItem(Container, Item, Amount);
 }
 
 void UEISInventoryManagerComponent::Container_MoveItemToOtherContainer(UEISItemContainer* FromContainer,
@@ -220,4 +238,49 @@ void UEISInventoryManagerComponent::RemoveItemFromSource(UObject* Source, UEISIt
 		}
 		return;
 	}
+}
+
+void UEISInventoryManagerComponent::ServerContainerAddItem_Implementation(UObject* FromSource, UEISItemContainer* ToContainer, UEISItem* Item)
+{
+	UEISInventoryFunctionLibrary::Container_AddItem(ToContainer, Item);
+	RemoveItemFromSource(FromSource, Item);
+}
+
+bool UEISInventoryManagerComponent::ServerContainerAddItem_Validate(UObject* FromSource, UEISItemContainer* ToContainer, UEISItem* Item)
+{
+	return IsValid(FromSource) && IsValid(ToContainer) && IsValid(Item);
+}
+
+void UEISInventoryManagerComponent::ServerContainerRemoveItem_Implementation(UEISItemContainer* Container, UEISItem* Item)
+{
+	UEISInventoryFunctionLibrary::Container_RemoveItem(Container, Item);
+}
+
+bool UEISInventoryManagerComponent::ServerContainerRemoveItem_Validate(UEISItemContainer* Container, UEISItem* Item)
+{
+	return IsValid(Container) && IsValid(Item);
+}
+
+void UEISInventoryManagerComponent::ServerContainerStackItem_Implementation(
+	UObject* FromSource, UEISItemContainer* InContainer, UEISItem* SourceItem, UEISItem* TargetItem)
+{
+	UEISInventoryFunctionLibrary::Container_StackItem(InContainer, SourceItem, TargetItem);
+	RemoveItemFromSource(FromSource, SourceItem);
+}
+
+bool UEISInventoryManagerComponent::ServerContainerStackItem_Validate(UObject* FromSource,
+                                                                      UEISItemContainer* InContainer,
+                                                                      UEISItem* SourceItem, UEISItem* TargetItem)
+{
+	return IsValid(FromSource) && IsValid(InContainer) && IsValid(SourceItem) && IsValid(TargetItem);
+}
+
+void UEISInventoryManagerComponent::ServerSplitItem_Implementation(UEISItemContainer* Container, UEISItem* Item, int Amount)
+{
+	UEISInventoryFunctionLibrary::Container_SplitItem(Container, Item, Amount);
+}
+
+bool UEISInventoryManagerComponent::ServerSplitItem_Validate(UEISItemContainer* Container, UEISItem* Item, int Amount)
+{
+	return IsValid(Container) && IsValid(Item) && Amount > 0;
 }

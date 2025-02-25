@@ -25,6 +25,34 @@ bool UEISItemContainer::ReplicateSubobjects(UActorChannel* Channel, FOutBunch* B
 	return bReplicateSomething;
 }
 
+void UEISItemContainer::AddStartingData()
+{
+	for (UEISItem* Item : StartingData)
+	{
+		if (!IsValid(Item))
+		{
+			continue;
+		}
+
+		const UEISItem* ItemCDO = Item->GetClass()->GetDefaultObject<UEISItem>();
+		check(ItemCDO);
+
+		if (Item->GetDefinition() == ItemCDO->GetDefinition())
+		{
+			if (CanAddItem(Item))
+			{
+				AddItem(Item);
+			}
+		}
+		else
+		{
+			// Log
+		}
+	}
+	
+	StartingData.Empty();
+}
+
 bool UEISItemContainer::CanAddItem(const UEISItem* Item) const
 {
 	check(Item);
@@ -85,34 +113,6 @@ UEISItem* UEISItemContainer::FindItemByName(const FName& ScriptName) const
 		}
 	}
 	return nullptr;
-}
-
-void UEISItemContainer::AddStartingData()
-{
-	for (UEISItem* Item : StartingData)
-	{
-		if (!IsValid(Item))
-		{
-			continue;
-		}
-
-		const UEISItem* ItemCDO = Item->GetClass()->GetDefaultObject<UEISItem>();
-		check(ItemCDO);
-
-		if (Item->GetDefinition() == ItemCDO->GetDefinition())
-		{
-			if (CanAddItem(Item))
-			{
-				AddItem(Item);
-			}
-		}
-		else
-		{
-			// Log
-		}
-	}
-	
-	StartingData.Empty();
 }
 
 bool UEISItemContainer::FindAvailablePlace(UEISItem* Item)

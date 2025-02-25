@@ -37,7 +37,8 @@ const FGameplayTagContainer& UEISItem::GetTags() const
 
 bool UEISItem::IsStackable() const
 {
-	return ItemDefinition->bStackable;
+	return (ItemDefinition->bStackable && (ItemDefinition->bHasStackMaximum && ItemDefinition->StackMaximum > InstanceData.
+		Amount)) || ItemDefinition->bStackable;
 }
 
 int UEISItem::GetStackAmount() const
@@ -72,6 +73,7 @@ void UEISItem::OnCreate(int InItemId, const UEISItem* SourceItem)
 {
 	InstanceData.ItemId = InItemId;
 	K2_OnCreate(SourceItem);
+	OnItemCreate.Broadcast(this);
 }
 
 bool UEISItem::CanStackWith(const UEISItem* OtherItem) const

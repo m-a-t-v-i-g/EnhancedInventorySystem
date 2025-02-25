@@ -9,11 +9,6 @@
 class UEISItemContainer;
 class UEISItem;
 
-namespace FInventorySystemCore
-{
-	
-}
-
 UCLASS()
 class ENHANCEDINVENTORYSYSTEM_API UEISInventoryFunctionLibrary : public UBlueprintFunctionLibrary
 {
@@ -42,7 +37,7 @@ public:
 	static void Container_MoveItemToOtherContainer(UEISItemContainer* SourceContainer,
 	                                               UEISItemContainer* TargetContainer, UEISItem* Item,
 	                                               bool bFullStack = false);
-	
+
 private:
 	static int LastItemId;
 };

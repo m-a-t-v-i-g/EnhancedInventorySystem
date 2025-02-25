@@ -50,6 +50,8 @@ public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual bool ReplicateSubobjects(UActorChannel* Channel, FOutBunch* Bunch, FReplicationFlags* RepFlags);
 	
+	void AddStartingData();
+
 	UFUNCTION(BlueprintPure, Category = "EIS|Item Container")
 	bool CanAddItem(const UEISItem* Item) const;
 
@@ -69,8 +71,6 @@ public:
 	TArray<UEISItem*> GetItems() const { return Items; }
 
 protected:
-	void AddStartingData();
-
 	UFUNCTION(BlueprintCallable, Category = "EIS|Item Container")
 	bool FindAvailablePlace(UEISItem* Item);
 	

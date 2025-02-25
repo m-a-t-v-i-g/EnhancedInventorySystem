@@ -7,6 +7,7 @@
 #include "Net/Serialization/FastArraySerializer.h"
 #include "EISInventoryManagerComponent.generated.h"
 
+class UItemsContainer;
 struct FEISAppliedItemContainers;
 class UEISInventoryManagerComponent;
 class UEISItemContainer;
@@ -74,6 +75,18 @@ public:
 	virtual bool ReplicateSubobjects(UActorChannel* Channel, FOutBunch* Bunch, FReplicationFlags* RepFlags) override;
 
 	UFUNCTION(BlueprintCallable, Category = "EIS|Inventory Manager")
+	virtual void SetupInventoryManager(APawn* OwnPawn);
+
+	UFUNCTION(BlueprintCallable, Category = "EIS|Inventory Manager")
+	virtual void ResetInventoryManager();
+
+	UFUNCTION(BlueprintImplementableEvent, DisplayName = "OnSetupInventoryManager")
+	void K2_OnSetupInventoryManager(APawn* OwnPawn);
+
+	UFUNCTION(BlueprintImplementableEvent, DisplayName = "OnResetInventoryManager")
+	void K2_OnResetInventoryManager();
+
+	UFUNCTION(BlueprintCallable, Category = "EIS|Inventory Manager")
 	void AddReplicatedContainer(UEISItemContainer* Container);
 
 	UFUNCTION(BlueprintCallable, Category = "EIS|Inventory Manager")
@@ -83,15 +96,6 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	
-	virtual void SetupInventoryManager();
-	virtual void ResetInventoryManager();
-
-	UFUNCTION(BlueprintImplementableEvent, DisplayName = "OnSetupInventoryManager", Category = "EIS|Inventory Manager")
-	void K2_OnSetupInventoryManager();
-
-	UFUNCTION(BlueprintImplementableEvent, DisplayName = "OnResetInventoryManager", Category = "EIS|Inventory Manager")
-	void K2_OnResetInventoryManager();
-
 	UFUNCTION(BlueprintCallable, Category = "EIS|Inventory Manager|Container")
 	void Container_AddItem(UObject* FromSource, UEISItemContainer* ToContainer, UEISItem* Item);
 
@@ -112,6 +116,22 @@ protected:
 	virtual void RemoveItemFromSource(UObject* Source, UEISItem* Item);
 	
 private:
+	UPROPERTY(EditDefaultsOnly, Category = "Inventory Manager")
+	bool bInitializeOnBeginPlay = false;
+	
 	UPROPERTY(Replicated)
 	FEISAppliedItemContainers ReplicatedContainers;
+	
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerContainerAddItem(UObject* FromSource, UEISItemContainer* ToContainer, UEISItem* Item);
+
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerContainerRemoveItem(UEISItemContainer* Container, UEISItem* Item);
+	
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerContainerStackItem(UObject* FromSource, UEISItemContainer* InContainer, UEISItem* SourceItem, UEISItem* TargetItem);
+
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerSplitItem(UEISItemContainer* Container, UEISItem* Item, int Amount);
+
 };

@@ -7,7 +7,8 @@
 #include "UObject/Object.h"
 #include "EISItem.generated.h"
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnAmountChangeSignature, int, NewAmount, int, PrevAmount);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FEISItemSignature, UEISItem*, Item);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FEISOnAmountChangeSignature, int, NewAmount, int, PrevAmount);
 
 USTRUCT(DisplayName = "Item Instance Data", BlueprintType, Blueprintable)
 struct FEISItemInstanceData
@@ -33,11 +34,18 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Class")
 	FGameplayTagContainer Tags;
 	
-	UPROPERTY(EditAnywhere, Category = "Properties")
+	UPROPERTY(EditAnywhere, Category = "Properties|Stacking")
 	bool bStackable = false;
 	
-	UPROPERTY(EditAnywhere, Category = "Properties", meta = (EditCondition = "bStackable", ClampMin = "1"))
+	UPROPERTY(EditAnywhere, Category = "Properties|Stacking", meta = (EditCondition = "bStackable", ClampMin = "1"))
 	int StackAmount = 1;
+	
+	UPROPERTY(EditAnywhere, Category = "Properties|Stacking")
+	bool bHasStackMaximum = false;
+	
+	UPROPERTY(EditAnywhere, Category = "Properties|Stacking",
+		meta = (EditCondition = "bStackable && bHasMaximum", ClampMin = "1"))
+	int StackMaximum = 1;
 };
 
 UCLASS(DisplayName = "Item Component", BlueprintType, Blueprintable, EditInlineNew, DefaultToInstanced, Within = "EISItem")
@@ -55,7 +63,10 @@ public:
 	UEISItem(const FObjectInitializer& ObjectInitializer);
 
 	UPROPERTY(BlueprintAssignable)
-	FOnAmountChangeSignature OnAmountChange;
+	FEISItemSignature OnItemCreate;
+	
+	UPROPERTY(BlueprintAssignable)
+	FEISOnAmountChangeSignature OnAmountChange;
 	
 	virtual bool IsSupportedForNetworking() const override { return true; }
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
@@ -106,7 +117,7 @@ public:
 
 	void OnCreate(int InItemId, const UEISItem* SourceItem);
 
-	UFUNCTION(BlueprintImplementableEvent)
+	UFUNCTION(BlueprintImplementableEvent, DisplayName = "OnCreate")
 	void K2_OnCreate(const UEISItem* SourceItem);
 	
 	UFUNCTION(BlueprintPure, Category = "EIS|Item")
