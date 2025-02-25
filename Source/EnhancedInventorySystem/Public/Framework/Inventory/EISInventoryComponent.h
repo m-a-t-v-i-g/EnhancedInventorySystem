@@ -7,10 +7,9 @@
 #include "EISInventoryComponent.generated.h"
 
 class UEISItemContainer;
-class UEISItem;
+class UEISItemInstance;
 
-UCLASS(DisplayName = "Inventory Component", ClassGroup = "Enhanced Inventory System",
-	meta = (BlueprintSpawnableComponent))
+UCLASS(DisplayName = "Inventory Component", Abstract, ClassGroup = "EIS", meta = (BlueprintSpawnableComponent))
 class ENHANCEDINVENTORYSYSTEM_API UEISInventoryComponent : public UGameFrameworkComponent
 {
 	GENERATED_BODY()
@@ -19,19 +18,19 @@ public:
 	UEISInventoryComponent(const FObjectInitializer& ObjectInitializer);
 
 	UFUNCTION(BlueprintCallable, Category = "EIS|Inventory Component")
-	void FindAvailablePlace(UEISItem* Item);
+	void FindAvailablePlace(UEISItemInstance* Item);
 
 	UFUNCTION(BlueprintCallable, Category = "EIS|Inventory Component")
-	void AddItem(UEISItem* Item);
+	void AddItem(UEISItemInstance* Item);
 
 	UFUNCTION(BlueprintCallable, Category = "EIS|Inventory Component")
-	void RemoveItem(UEISItem* Item);
+	void RemoveItem(UEISItemInstance* Item);
 
 	UFUNCTION(BlueprintCallable, Category = "EIS|Inventory Component")
-	void StackItem(UEISItem* SourceItem, UEISItem* TargetItem);
+	void StackItem(UEISItemInstance* SourceItem, UEISItemInstance* TargetItem);
 
 	UFUNCTION(BlueprintCallable, Category = "EIS|Inventory Component")
-	void SplitItem(UEISItem* Item, int Amount);
+	void SplitItem(UEISItemInstance* Item, int Amount);
 	
 	UFUNCTION(BlueprintCallable, Category = "EIS|Inventory Component")
 	void SetItemContainer(UEISItemContainer* NewItemContainer);

@@ -7,7 +7,7 @@
 #include "EISInventoryFunctionLibrary.generated.h"
 
 class UEISItemContainer;
-class UEISItem;
+class UEISItemInstance;
 
 UCLASS()
 class ENHANCEDINVENTORYSYSTEM_API UEISInventoryFunctionLibrary : public UBlueprintFunctionLibrary
@@ -16,26 +16,26 @@ class ENHANCEDINVENTORYSYSTEM_API UEISInventoryFunctionLibrary : public UBluepri
 
 public:
 	UFUNCTION(BlueprintCallable, Category = "EIS|Inventory Function Library")
-	static UEISItem* GenerateItem(UWorld* World, const UEISItem* SourceItem);
+	static UEISItemInstance* GenerateItem(UWorld* World, const UEISItemInstance* SourceItem);
 
 	UFUNCTION(BlueprintCallable, Category = "EIS|Inventory Function Library")
-	static bool Container_FindAvailablePlace(UEISItemContainer* Container, UEISItem* Item);
+	static bool Container_FindAvailablePlace(UEISItemContainer* Container, UEISItemInstance* Item);
 	
 	UFUNCTION(BlueprintCallable, Category = "EIS|Inventory Function Library")
-	static void Container_AddItem(UEISItemContainer* Container, UEISItem* Item);
+	static void Container_AddItem(UEISItemContainer* Container, UEISItemInstance* Item);
 
 	UFUNCTION(BlueprintCallable, Category = "EIS|Inventory Function Library")
-	static void Container_RemoveItem(UEISItemContainer* Container, UEISItem* Item);
+	static void Container_RemoveItem(UEISItemContainer* Container, UEISItemInstance* Item);
 
 	UFUNCTION(BlueprintCallable, Category = "EIS|Inventory Function Library")
-	static bool Container_StackItem(UEISItemContainer* Container, UEISItem* SourceItem, UEISItem* TargetItem);
+	static bool Container_StackItem(UEISItemContainer* Container, UEISItemInstance* SourceItem, UEISItemInstance* TargetItem);
 	
 	UFUNCTION(BlueprintCallable, Category = "EIS|Inventory Function Library")
-	static void Container_SplitItem(UEISItemContainer* Container, UEISItem* Item, int Amount);
+	static void Container_SplitItem(UEISItemContainer* Container, UEISItemInstance* Item, int Amount);
 
 	UFUNCTION(BlueprintCallable, Category = "EIS|Inventory Function Library")
 	static void Container_MoveItemToOtherContainer(UEISItemContainer* SourceContainer,
-	                                               UEISItemContainer* TargetContainer, UEISItem* Item,
+	                                               UEISItemContainer* TargetContainer, UEISItemInstance* Item,
 	                                               bool bFullStack = false);
 
 private:

@@ -1,16 +1,16 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #include "EISInventoryFunctionLibrary.h"
-#include "EISItem.h"
+#include "EISItemInstance.h"
 #include "EISItemContainer.h"
 
 int UEISInventoryFunctionLibrary::LastItemId {0};
 
-UEISItem* UEISInventoryFunctionLibrary::GenerateItem(UWorld* World, const UEISItem* SourceItem)
+UEISItemInstance* UEISInventoryFunctionLibrary::GenerateItem(UWorld* World, const UEISItemInstance* SourceItem)
 {
 	if (SourceItem)
 	{
-		if (UEISItem* NewItem = NewObject<UEISItem>(World, SourceItem->GetClass(),
+		if (UEISItemInstance* NewItem = NewObject<UEISItemInstance>(World, SourceItem->GetClass(),
 		                                            FName(SourceItem->GetScriptName().ToString() + FString::Printf(
 			                                            TEXT("_object%d"), LastItemId + 1))))
 		{
@@ -22,7 +22,7 @@ UEISItem* UEISInventoryFunctionLibrary::GenerateItem(UWorld* World, const UEISIt
 	return nullptr;
 }
 
-bool UEISInventoryFunctionLibrary::Container_FindAvailablePlace(UEISItemContainer* Container, UEISItem* Item)
+bool UEISInventoryFunctionLibrary::Container_FindAvailablePlace(UEISItemContainer* Container, UEISItemInstance* Item)
 {
 	if (!Container || !Item)
 	{
@@ -32,7 +32,7 @@ bool UEISInventoryFunctionLibrary::Container_FindAvailablePlace(UEISItemContaine
 	return Container->FindAvailablePlace(Item);
 }
 
-void UEISInventoryFunctionLibrary::Container_AddItem(UEISItemContainer* Container, UEISItem* Item)
+void UEISInventoryFunctionLibrary::Container_AddItem(UEISItemContainer* Container, UEISItemInstance* Item)
 {
 	if (!Container || !Item)
 	{
@@ -40,9 +40,10 @@ void UEISInventoryFunctionLibrary::Container_AddItem(UEISItemContainer* Containe
 	}
 
 	Container->AddItem(Item);
+	Item->OnAddToContainer();
 }
 
-void UEISInventoryFunctionLibrary::Container_RemoveItem(UEISItemContainer* Container, UEISItem* Item)
+void UEISInventoryFunctionLibrary::Container_RemoveItem(UEISItemContainer* Container, UEISItemInstance* Item)
 {
 	if (!Container || !Item)
 	{
@@ -52,8 +53,8 @@ void UEISInventoryFunctionLibrary::Container_RemoveItem(UEISItemContainer* Conta
 	Container->RemoveItem(Item);
 }
 
-bool UEISInventoryFunctionLibrary::Container_StackItem(UEISItemContainer* Container, UEISItem* SourceItem,
-                                                       UEISItem* TargetItem)
+bool UEISInventoryFunctionLibrary::Container_StackItem(UEISItemContainer* Container, UEISItemInstance* SourceItem,
+                                                       UEISItemInstance* TargetItem)
 {
 	if (!Container || !SourceItem || !TargetItem)
 	{
@@ -63,7 +64,7 @@ bool UEISInventoryFunctionLibrary::Container_StackItem(UEISItemContainer* Contai
 	return Container->StackItem(SourceItem, TargetItem);
 }
 
-void UEISInventoryFunctionLibrary::Container_SplitItem(UEISItemContainer* Container, UEISItem* Item, int Amount)
+void UEISInventoryFunctionLibrary::Container_SplitItem(UEISItemContainer* Container, UEISItemInstance* Item, int Amount)
 {
 	if (!Container || !Item)
 	{
@@ -75,7 +76,7 @@ void UEISInventoryFunctionLibrary::Container_SplitItem(UEISItemContainer* Contai
 
 void UEISInventoryFunctionLibrary::Container_MoveItemToOtherContainer(UEISItemContainer* SourceContainer,
                                                                       UEISItemContainer* TargetContainer,
-                                                                      UEISItem* Item, bool bFullStack)
+                                                                      UEISItemInstance* Item, bool bFullStack)
 {
 	if (!SourceContainer || !TargetContainer || !Item)
 	{
@@ -84,11 +85,11 @@ void UEISInventoryFunctionLibrary::Container_MoveItemToOtherContainer(UEISItemCo
 	
 	if (!bFullStack && Item->GetAmount() > Item->GetStackAmount())
 	{
-		if (UEISItem* StackableItem = TargetContainer->FindFirstStackForItem(Item))
+		if (UEISItemInstance* StackableItem = TargetContainer->FindFirstStackForItem(Item))
 		{
 			StackableItem->AddAmount(Item->GetStackAmount());
 		}
-		else if (UEISItem* NewItem = GenerateItem(TargetContainer->GetWorld(), Item))
+		else if (UEISItemInstance* NewItem = GenerateItem(TargetContainer->GetWorld(), Item))
 		{
 			NewItem->SetAmount(NewItem->GetStackAmount());
 			Container_AddItem(TargetContainer, NewItem);

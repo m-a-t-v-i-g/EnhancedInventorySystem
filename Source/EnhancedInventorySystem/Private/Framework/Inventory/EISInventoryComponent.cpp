@@ -9,7 +9,7 @@ UEISInventoryComponent::UEISInventoryComponent(const FObjectInitializer& ObjectI
 	PrimaryComponentTick.bCanEverTick = false;
 }
 
-void UEISInventoryComponent::FindAvailablePlace(UEISItem* Item)
+void UEISInventoryComponent::FindAvailablePlace(UEISItemInstance* Item)
 {
 	if (HasAuthority())
 	{
@@ -17,7 +17,7 @@ void UEISInventoryComponent::FindAvailablePlace(UEISItem* Item)
 	}
 }
 
-void UEISInventoryComponent::AddItem(UEISItem* Item)
+void UEISInventoryComponent::AddItem(UEISItemInstance* Item)
 {
 	if (HasAuthority())
 	{
@@ -25,7 +25,7 @@ void UEISInventoryComponent::AddItem(UEISItem* Item)
 	}
 }
 
-void UEISInventoryComponent::RemoveItem(UEISItem* Item)
+void UEISInventoryComponent::RemoveItem(UEISItemInstance* Item)
 {
 	if (HasAuthority())
 	{
@@ -33,7 +33,7 @@ void UEISInventoryComponent::RemoveItem(UEISItem* Item)
 	}
 }
 
-void UEISInventoryComponent::StackItem(UEISItem* SourceItem, UEISItem* TargetItem)
+void UEISInventoryComponent::StackItem(UEISItemInstance* SourceItem, UEISItemInstance* TargetItem)
 {
 	if (HasAuthority())
 	{
@@ -41,7 +41,7 @@ void UEISInventoryComponent::StackItem(UEISItem* SourceItem, UEISItem* TargetIte
 	}
 }
 
-void UEISInventoryComponent::SplitItem(UEISItem* Item, int Amount)
+void UEISInventoryComponent::SplitItem(UEISItemInstance* Item, int Amount)
 {
 	if (HasAuthority())
 	{

@@ -2,7 +2,7 @@
 
 #include "EISItemContainer.h"
 #include "EISInventoryFunctionLibrary.h"
-#include "EISItem.h"
+#include "EISItemInstance.h"
 #include "Engine/ActorChannel.h"
 #include "Net/UnrealNetwork.h"
 
@@ -16,7 +16,7 @@ void UEISItemContainer::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 bool UEISItemContainer::ReplicateSubobjects(UActorChannel* Channel, FOutBunch* Bunch, FReplicationFlags* RepFlags)
 {
 	bool bReplicateSomething = false;
-	for (UEISItem* Item : GetItems())
+	for (UEISItemInstance* Item : GetItems())
 	{
 		bReplicateSomething |= Channel->ReplicateSubobject(Item, *Bunch, *RepFlags);
 		bReplicateSomething |= Item->ReplicateSubobjects(Channel, Bunch, RepFlags);
@@ -27,14 +27,14 @@ bool UEISItemContainer::ReplicateSubobjects(UActorChannel* Channel, FOutBunch* B
 
 void UEISItemContainer::AddStartingData()
 {
-	for (UEISItem* Item : StartingData)
+	for (UEISItemInstance* Item : StartingData)
 	{
 		if (!IsValid(Item))
 		{
 			continue;
 		}
 
-		const UEISItem* ItemCDO = Item->GetClass()->GetDefaultObject<UEISItem>();
+		const UEISItemInstance* ItemCDO = Item->GetClass()->GetDefaultObject<UEISItemInstance>();
 		check(ItemCDO);
 
 		if (Item->GetDefinition() == ItemCDO->GetDefinition())
@@ -53,7 +53,7 @@ void UEISItemContainer::AddStartingData()
 	StartingData.Empty();
 }
 
-bool UEISItemContainer::CanAddItem(const UEISItem* Item) const
+bool UEISItemContainer::CanAddItem(const UEISItemInstance* Item) const
 {
 	check(Item);
 	
@@ -66,12 +66,12 @@ bool UEISItemContainer::CanAddItem(const UEISItem* Item) const
 	return false;
 }
 
-bool UEISItemContainer::Contains(const UEISItem* Item) const
+bool UEISItemContainer::Contains(const UEISItemInstance* Item) const
 {
 	return Items.Contains(Item);
 }
 
-UEISItem* UEISItemContainer::FindFirstStackForItem(const UEISItem* ForItem) const
+UEISItemInstance* UEISItemContainer::FindFirstStackForItem(const UEISItemInstance* ForItem) const
 {
 	for (int i = 0; i < Items.Num(); i++)
 	{
@@ -81,7 +81,7 @@ UEISItem* UEISItemContainer::FindFirstStackForItem(const UEISItem* ForItem) cons
 			continue;
 		}
 		
-		if (FoundItem->CanStackWith(ForItem))
+		if (FoundItem->CanStackItem(ForItem))
 		{
 			return FoundItem;
 		}
@@ -89,9 +89,9 @@ UEISItem* UEISItemContainer::FindFirstStackForItem(const UEISItem* ForItem) cons
 	return nullptr;
 }
 
-UEISItem* UEISItemContainer::FindItemByDefinition(const UEISItemDefinition* Definition) const
+UEISItemInstance* UEISItemContainer::FindItemByDefinition(const UEISItemDefinition* Definition) const
 {
-	for (UEISItem* Item : Items)
+	for (UEISItemInstance* Item : Items)
 	{
 		const UEISItemDefinition* Def = Item->GetDefinition();
 		if (Def == Definition)
@@ -102,9 +102,9 @@ UEISItem* UEISItemContainer::FindItemByDefinition(const UEISItemDefinition* Defi
 	return nullptr;
 }
 
-UEISItem* UEISItemContainer::FindItemByName(const FName& ScriptName) const
+UEISItemInstance* UEISItemContainer::FindItemByName(const FName& ScriptName) const
 {
-	for (UEISItem* Item : Items)
+	for (UEISItemInstance* Item : Items)
 	{
 		const UEISItemDefinition* Def = Item->GetDefinition();
 		if (Def->ScriptName == ScriptName)
@@ -115,11 +115,11 @@ UEISItem* UEISItemContainer::FindItemByName(const FName& ScriptName) const
 	return nullptr;
 }
 
-bool UEISItemContainer::FindAvailablePlace(UEISItem* Item)
+bool UEISItemContainer::FindAvailablePlace(UEISItemInstance* Item)
 {
 	if (Item)
 	{
-		if (UEISItem* StackableItem = FindFirstStackForItem(Item))
+		if (UEISItemInstance* StackableItem = FindFirstStackForItem(Item))
 		{
 			StackItem(Item, StackableItem);
 			return true;
@@ -134,7 +134,7 @@ bool UEISItemContainer::FindAvailablePlace(UEISItem* Item)
 	return false;
 }
 
-void UEISItemContainer::AddItem(UEISItem* Item)
+void UEISItemContainer::AddItem(UEISItemInstance* Item)
 {
 	if (Item && CanAddItem(Item))
 	{
@@ -143,7 +143,7 @@ void UEISItemContainer::AddItem(UEISItem* Item)
 	}
 }
 
-void UEISItemContainer::RemoveItem(UEISItem* Item)
+void UEISItemContainer::RemoveItem(UEISItemInstance* Item)
 {
 	if (Item && Items.Contains(Item))
 	{
@@ -152,11 +152,11 @@ void UEISItemContainer::RemoveItem(UEISItem* Item)
 	}
 }
 
-bool UEISItemContainer::StackItem(UEISItem* SourceItem, UEISItem* TargetItem)
+bool UEISItemContainer::StackItem(UEISItemInstance* SourceItem, UEISItemInstance* TargetItem)
 {
 	if (SourceItem && TargetItem)
 	{
-		if (TargetItem->CanStackWith(SourceItem))
+		if (TargetItem->CanStackItem(SourceItem))
 		{
 			TargetItem->AddAmount(SourceItem->GetAmount());
 			RemoveItem(SourceItem);
@@ -166,13 +166,13 @@ bool UEISItemContainer::StackItem(UEISItem* SourceItem, UEISItem* TargetItem)
 	return false;
 }
 
-bool UEISItemContainer::SplitItem(UEISItem* Item, int Amount)
+bool UEISItemContainer::SplitItem(UEISItemInstance* Item, int Amount)
 {
 	if (Item && CanAddItem(Item))
 	{
 		if (Item->GetAmount() > 1 && Item->GetAmount() > Amount)
 		{
-			UEISItem* SplitItem = UEISInventoryFunctionLibrary::GenerateItem(GetWorld(), Item);
+			UEISItemInstance* SplitItem = UEISInventoryFunctionLibrary::GenerateItem(GetWorld(), Item);
 			if (SplitItem != nullptr)
 			{
 				Item->RemoveAmount(Amount);
@@ -184,12 +184,12 @@ bool UEISItemContainer::SplitItem(UEISItem* Item, int Amount)
 	return false;
 }
 
-void UEISItemContainer::OnRep_Items(TArray<UEISItem*> PrevContainer)
+void UEISItemContainer::OnRep_Items(TArray<UEISItemInstance*> PrevContainer)
 {
-	TArray<UEISItem*> AddedItems;
-	TArray<UEISItem*> RemovedItems;
+	TArray<UEISItemInstance*> AddedItems;
+	TArray<UEISItemInstance*> RemovedItems;
 	
-	for (UEISItem* Item : Items)
+	for (UEISItemInstance* Item : Items)
 	{
 		if (PrevContainer.Contains(Item))
 		{
@@ -199,7 +199,7 @@ void UEISItemContainer::OnRep_Items(TArray<UEISItem*> PrevContainer)
 		AddedItems.AddUnique(Item);
 	}
 	
-	for (UEISItem* Item : PrevContainer)
+	for (UEISItemInstance* Item : PrevContainer)
 	{
 		if (Items.Contains(Item))
 		{

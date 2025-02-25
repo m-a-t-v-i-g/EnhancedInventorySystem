@@ -11,7 +11,7 @@ class UItemsContainer;
 struct FEISAppliedItemContainers;
 class UEISInventoryManagerComponent;
 class UEISItemContainer;
-class UEISItem;
+class UEISItemInstance;
 
 USTRUCT()
 struct FEISAppliedItemContainerEntry : public FFastArraySerializerItem
@@ -62,8 +62,7 @@ private:
 	UEISInventoryManagerComponent* InventoryManagerComponent = nullptr;
 };
 
-UCLASS(DisplayName = "Inventory Manager Component", ClassGroup = "Enhanced Inventory System",
-	meta = (BlueprintSpawnableComponent))
+UCLASS(DisplayName = "Inventory Manager Component", Abstract, ClassGroup = "EIS", meta = (BlueprintSpawnableComponent))
 class ENHANCEDINVENTORYSYSTEM_API UEISInventoryManagerComponent : public UControllerComponent
 {
 	GENERATED_BODY()
@@ -97,23 +96,23 @@ protected:
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	
 	UFUNCTION(BlueprintCallable, Category = "EIS|Inventory Manager|Container")
-	void Container_AddItem(UObject* FromSource, UEISItemContainer* ToContainer, UEISItem* Item);
+	void Container_AddItem(UObject* FromSource, UEISItemContainer* ToContainer, UEISItemInstance* Item);
 
 	UFUNCTION(BlueprintCallable, Category = "EIS|Inventory Manager|Container")
-	void Container_RemoveItem(UEISItemContainer* Container, UEISItem* Item);
+	void Container_RemoveItem(UEISItemContainer* Container, UEISItemInstance* Item);
 
 	UFUNCTION(BlueprintCallable, Category = "EIS|Inventory Manager|Container")
-	void Container_StackItem(UObject* FromSource, UEISItemContainer* InContainer, UEISItem* SourceItem, UEISItem* TargetItem);
+	void Container_StackItem(UObject* FromSource, UEISItemContainer* InContainer, UEISItemInstance* SourceItem, UEISItemInstance* TargetItem);
 
 	UFUNCTION(BlueprintCallable, Category = "EIS|Inventory Manager|Container")
-	void Container_SplitItem(UEISItemContainer* Container, UEISItem* Item, int Amount);
+	void Container_SplitItem(UEISItemContainer* Container, UEISItemInstance* Item, int Amount);
 
 	UFUNCTION(BlueprintCallable, Category = "EIS|Inventory Manager|Container")
 	void Container_MoveItemToOtherContainer(UEISItemContainer* FromContainer, UEISItemContainer* ToContainer,
-	                                        UEISItem* Item);
+	                                        UEISItemInstance* Item);
 
 	UFUNCTION(BlueprintCallable, Category = "EIS|Inventory Manager|Container")
-	virtual void RemoveItemFromSource(UObject* Source, UEISItem* Item);
+	virtual void RemoveItemFromSource(UObject* Source, UEISItemInstance* Item);
 	
 private:
 	UPROPERTY(EditDefaultsOnly, Category = "Inventory Manager")
@@ -123,15 +122,15 @@ private:
 	FEISAppliedItemContainers ReplicatedContainers;
 	
 	UFUNCTION(Server, Reliable, WithValidation)
-	void ServerContainerAddItem(UObject* FromSource, UEISItemContainer* ToContainer, UEISItem* Item);
+	void ServerContainerAddItem(UObject* FromSource, UEISItemContainer* ToContainer, UEISItemInstance* Item);
 
 	UFUNCTION(Server, Reliable, WithValidation)
-	void ServerContainerRemoveItem(UEISItemContainer* Container, UEISItem* Item);
+	void ServerContainerRemoveItem(UEISItemContainer* Container, UEISItemInstance* Item);
 	
 	UFUNCTION(Server, Reliable, WithValidation)
-	void ServerContainerStackItem(UObject* FromSource, UEISItemContainer* InContainer, UEISItem* SourceItem, UEISItem* TargetItem);
+	void ServerContainerStackItem(UObject* FromSource, UEISItemContainer* InContainer, UEISItemInstance* SourceItem, UEISItemInstance* TargetItem);
 
 	UFUNCTION(Server, Reliable, WithValidation)
-	void ServerSplitItem(UEISItemContainer* Container, UEISItem* Item, int Amount);
+	void ServerSplitItem(UEISItemContainer* Container, UEISItemInstance* Item, int Amount);
 
 };

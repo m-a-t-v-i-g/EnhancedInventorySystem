@@ -3,13 +3,13 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "EISItem.h"
+#include "EISItemInstance.h"
 #include "GameplayTagContainer.h"
 #include "UObject/Object.h"
 #include "EISItemContainer.generated.h"
 
 class UEISInventoryFunctionLibrary;
-class UEISItem;
+class UEISItemInstance;
 
 USTRUCT(BlueprintType)
 struct FEISItemContainerChangeData
@@ -17,16 +17,16 @@ struct FEISItemContainerChangeData
 	GENERATED_USTRUCT_BODY()
 
 	UPROPERTY(BlueprintReadOnly)
-	TArray<UEISItem*> AddedItems;
+	TArray<UEISItemInstance*> AddedItems;
 
 	UPROPERTY(BlueprintReadOnly)
-	TArray<UEISItem*> RemovedItems;
+	TArray<UEISItemInstance*> RemovedItems;
 
 	FEISItemContainerChangeData()
 	{
 	}
 	
-	FEISItemContainerChangeData(const TArray<UEISItem*>& NewItems, const TArray<UEISItem*>& OldItems)
+	FEISItemContainerChangeData(const TArray<UEISItemInstance*>& NewItems, const TArray<UEISItemInstance*>& OldItems)
 	{
 		AddedItems = NewItems;
 		RemovedItems = OldItems;
@@ -53,50 +53,50 @@ public:
 	void AddStartingData();
 
 	UFUNCTION(BlueprintPure, Category = "EIS|Item Container")
-	bool CanAddItem(const UEISItem* Item) const;
+	bool CanAddItem(const UEISItemInstance* Item) const;
 
 	UFUNCTION(BlueprintPure, Category = "EIS|Item Container")
-	bool Contains(const UEISItem* Item) const;
+	bool Contains(const UEISItemInstance* Item) const;
 
 	UFUNCTION(BlueprintPure, Category = "EIS|Item Container")
-	UEISItem* FindFirstStackForItem(const UEISItem* ForItem) const;
+	UEISItemInstance* FindFirstStackForItem(const UEISItemInstance* ForItem) const;
 
 	UFUNCTION(BlueprintPure, Category = "EIS|Item Container")
-	UEISItem* FindItemByDefinition(const UEISItemDefinition* Definition) const;
+	UEISItemInstance* FindItemByDefinition(const UEISItemDefinition* Definition) const;
 
 	UFUNCTION(BlueprintPure, Category = "EIS|Item Container")
-	UEISItem* FindItemByName(const FName& ScriptName) const;
+	UEISItemInstance* FindItemByName(const FName& ScriptName) const;
 
 	UFUNCTION(BlueprintPure, Category = "EIS|Item Container")
-	TArray<UEISItem*> GetItems() const { return Items; }
+	TArray<UEISItemInstance*> GetItems() const { return Items; }
 
 protected:
 	UFUNCTION(BlueprintCallable, Category = "EIS|Item Container")
-	bool FindAvailablePlace(UEISItem* Item);
+	bool FindAvailablePlace(UEISItemInstance* Item);
 	
 	UFUNCTION(BlueprintCallable, Category = "EIS|Item Container")
-	void AddItem(UEISItem* Item);
+	void AddItem(UEISItemInstance* Item);
 
 	UFUNCTION(BlueprintCallable, Category = "EIS|Item Container")
-	void RemoveItem(UEISItem* Item);
+	void RemoveItem(UEISItemInstance* Item);
 
 	UFUNCTION(BlueprintCallable, Category = "EIS|Item Container")
-	bool StackItem(UEISItem* SourceItem, UEISItem* TargetItem);
+	bool StackItem(UEISItemInstance* SourceItem, UEISItemInstance* TargetItem);
 
 	UFUNCTION(BlueprintCallable, Category = "EIS|Item Container")
-	bool SplitItem(UEISItem* Item, int Amount);
+	bool SplitItem(UEISItemInstance* Item, int Amount);
 
 private:
 	UPROPERTY(EditDefaultsOnly, Category = "Item Container")
 	FGameplayTagContainer CategoryTags;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Item Container")
-	TArray<UEISItem*> StartingData;
+	TArray<UEISItemInstance*> StartingData;
 
 	UPROPERTY(EditInstanceOnly, ReplicatedUsing = "OnRep_Items", Category = "Item Container")
-	TArray<UEISItem*> Items;
+	TArray<UEISItemInstance*> Items;
 
 	UFUNCTION()
-	void OnRep_Items(TArray<UEISItem*> PrevContainer);
+	void OnRep_Items(TArray<UEISItemInstance*> PrevContainer);
 };
 
