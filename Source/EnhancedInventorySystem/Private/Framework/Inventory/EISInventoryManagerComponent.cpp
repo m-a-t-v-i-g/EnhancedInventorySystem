@@ -2,6 +2,7 @@
 
 #include "EISInventoryManagerComponent.h"
 #include "EISInventoryComponent.h"
+#include "EISInventoryFunctionLibrary.h"
 #include "EISItemContainer.h"
 #include "Engine/ActorChannel.h"
 #include "Net/UnrealNetwork.h"
@@ -69,6 +70,30 @@ bool UEISInventoryManagerComponent::ReplicateSubobjects(UActorChannel* Channel, 
 	return WroteSomething;
 }
 
+void UEISInventoryManagerComponent::AddReplicatedContainer(UEISItemContainer* Container)
+{
+	ReplicatedContainers.AddEntry(Container);
+}
+
+void UEISInventoryManagerComponent::RemoveReplicatedContainer(UEISItemContainer* Container)
+{
+	ReplicatedContainers.RemoveEntry(Container);
+}
+
+void UEISInventoryManagerComponent::BeginPlay()
+{
+	SetupInventoryManager();
+	
+	Super::BeginPlay();
+}
+
+void UEISInventoryManagerComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	ResetInventoryManager();
+	
+	Super::EndPlay(EndPlayReason);
+}
+
 void UEISInventoryManagerComponent::SetupInventoryManager()
 {
 	auto Pawn = GetPawn<APawn>();
@@ -85,31 +110,114 @@ void UEISInventoryManagerComponent::SetupInventoryManager()
 			}
 		}
 	}
+
+	K2_OnSetupInventoryManager();
 }
 
 void UEISInventoryManagerComponent::ResetInventoryManager()
 {
 	ReplicatedContainers.Clear();
+
+	K2_OnResetInventoryManager();
 }
 
-void UEISInventoryManagerComponent::AddReplicatedContainer(UEISItemContainer* Container)
+void UEISInventoryManagerComponent::Container_AddItem(UObject* FromSource, UEISItemContainer* ToContainer,
+                                                      UEISItem* Item)
 {
-	ReplicatedContainers.AddEntry(Container);
+	check(FromSource);
+	check(ToContainer);
+	check(Item);
+
+	if (!GetController<AController>())
+	{
+		return;
+	}
+	
+	if (!HasAuthority() && IsLocalController())
+	{
+		UEISInventoryFunctionLibrary::Container_AddItem(ToContainer, Item);
+		RemoveItemFromSource(FromSource, Item);
+	}
 }
 
-void UEISInventoryManagerComponent::RemoveReplicatedContainer(UEISItemContainer* Container)
+void UEISInventoryManagerComponent::Container_RemoveItem(UEISItemContainer* Container, UEISItem* Item)
 {
-	ReplicatedContainers.RemoveEntry(Container);
+	check(Container);
+	check(Item);
+
+	if (!GetController<AController>())
+	{
+		return;
+	}
+	
+	if (!HasAuthority() && IsLocalController())
+	{
+		UEISInventoryFunctionLibrary::Container_RemoveItem(Container, Item);
+	}
 }
 
-void UEISInventoryManagerComponent::InitializeComponent()
+void UEISInventoryManagerComponent::Container_StackItem(UObject* FromSource, UEISItemContainer* InContainer,
+                                                        UEISItem* SourceItem, UEISItem* TargetItem)
 {
-	SetupInventoryManager();
-	Super::InitializeComponent();
+	check(FromSource);
+	check(InContainer);
+	check(SourceItem);
+	check(TargetItem);
+	
+	if (!GetController<AController>())
+	{
+		return;
+	}
+	
+	if (!HasAuthority() && IsLocalController())
+	{
+		UEISInventoryFunctionLibrary::Container_StackItem(InContainer, SourceItem, TargetItem);
+		RemoveItemFromSource(FromSource, SourceItem);
+	}
 }
 
-void UEISInventoryManagerComponent::UninitializeComponent()
+void UEISInventoryManagerComponent::Container_SplitItem(UEISItemContainer* Container, UEISItem* Item, int Amount)
 {
-	ResetInventoryManager();
-	Super::UninitializeComponent();
+	check(Container);
+	check(Item);
+
+	if (!GetController<AController>() || Amount <= 0)
+	{
+		return;
+	}
+	
+	if (!HasAuthority() && IsLocalController())
+	{
+		UEISInventoryFunctionLibrary::Container_SplitItem(Container, Item, Amount);
+	}
+}
+
+void UEISInventoryManagerComponent::Container_MoveItemToOtherContainer(UEISItemContainer* FromContainer,
+                                                                       UEISItemContainer* ToContainer, UEISItem* Item)
+{
+	check(FromContainer);
+	check(ToContainer);
+	check(Item);
+
+	if (!GetController<AController>())
+	{
+		return;
+	}
+
+	if (!HasAuthority() && IsLocalController())
+	{
+		UEISInventoryFunctionLibrary::Container_MoveItemToOtherContainer(FromContainer, ToContainer, Item);
+	}
+}
+
+void UEISInventoryManagerComponent::RemoveItemFromSource(UObject* Source, UEISItem* Item)
+{
+	if (auto SourceContainer = Cast<UEISItemContainer>(Source))
+	{
+		if (SourceContainer->Contains(Item))
+		{
+			UEISInventoryFunctionLibrary::Container_RemoveItem(SourceContainer, Item);
+		}
+		return;
+	}
 }

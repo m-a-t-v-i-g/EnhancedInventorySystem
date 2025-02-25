@@ -9,6 +9,18 @@
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnAmountChangeSignature, int, NewAmount, int, PrevAmount);
 
+USTRUCT(DisplayName = "Item Instance Data", BlueprintType, Blueprintable)
+struct FEISItemInstanceData
+{
+	GENERATED_USTRUCT_BODY()
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
+	int ItemId = 0;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item", meta = (ClampMin = "1"))
+	int Amount = 1;
+};
+
 UCLASS(DisplayName = "Item Definition")
 class ENHANCEDINVENTORYSYSTEM_API UEISItemDefinition : public UPrimaryDataAsset
 {
@@ -19,7 +31,7 @@ public:
 	FName ScriptName;
 
 	UPROPERTY(EditAnywhere, Category = "Class")
-	FGameplayTag Tag;
+	FGameplayTagContainer Tags;
 	
 	UPROPERTY(EditAnywhere, Category = "Properties")
 	bool bStackable = false;
@@ -48,6 +60,8 @@ public:
 	virtual bool IsSupportedForNetworking() const override { return true; }
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
+	virtual bool ReplicateSubobjects(UActorChannel* Channel, FOutBunch* Bunch, FReplicationFlags* RepFlags);
+
 #pragma region Definition
 	
 	UFUNCTION(BlueprintPure, Category = "EIS|Item|Definition")
@@ -57,7 +71,13 @@ public:
 	FORCEINLINE FName GetScriptName() const;
 	
 	UFUNCTION(BlueprintPure, Category = "EIS|Item|Definition")
+	const FGameplayTagContainer& GetTags() const;
+	
+	UFUNCTION(BlueprintPure, Category = "EIS|Item|Definition")
 	FORCEINLINE bool IsStackable() const;
+
+	UFUNCTION(BlueprintPure, Category = "EIS|Item|Definition")
+	FORCEINLINE int GetStackAmount() const;
 
 #pragma endregion Definition
 
@@ -73,16 +93,21 @@ public:
 	int RemoveAmount(int InAmount);
 	
 	UFUNCTION(BlueprintPure, Category = "EIS|Item|Amount")
-	int GetAmount() const { return Amount; }
+	int GetAmount() const { return InstanceData.Amount; }
 	
 #pragma endregion Amount
 	
 #pragma region Components
 
 	UFUNCTION(BlueprintPure, Category = "EIS|Item|Components")
-	TArray<UEISItemComponent*> GetComponents() const { return Components; };
+	TArray<UEISItemComponent*> GetComponents() const { return Components; }
 	
 #pragma endregion Components
+
+	void OnCreate(int InItemId, const UEISItem* SourceItem);
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void K2_OnCreate(const UEISItem* SourceItem);
 	
 	UFUNCTION(BlueprintPure, Category = "EIS|Item")
 	virtual bool CanStackWith(const UEISItem* OtherItem) const;
@@ -91,16 +116,13 @@ public:
 	virtual bool IsCorrespondsTo(const UEISItem* OtherItem) const;
 
 protected:
-	UPROPERTY(VisibleInstanceOnly, Category = "Item")
-	int ItemId = 0;
-	
-	UPROPERTY(VisibleInstanceOnly, Category = "Item", meta = (ClampMin = "1"))
-	int Amount = 1;
-	
-	UPROPERTY(EditInstanceOnly, Category = "Item")
-	TArray<UEISItemComponent*> Components;
+	UPROPERTY(EditInstanceOnly, Replicated, Category = "Item")
+	FEISItemInstanceData InstanceData;
 	
 private:
+	UPROPERTY(EditAnywhere, Category = "Item")
+	TArray<UEISItemComponent*> Components;
+	
 	UPROPERTY(EditAnywhere, Category = "Item")
 	TObjectPtr<UEISItemDefinition> ItemDefinition;
 };

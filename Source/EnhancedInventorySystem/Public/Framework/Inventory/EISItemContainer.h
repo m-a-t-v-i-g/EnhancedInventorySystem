@@ -8,17 +8,18 @@
 #include "UObject/Object.h"
 #include "EISItemContainer.generated.h"
 
+class UEISInventoryFunctionLibrary;
 class UEISItem;
 
-USTRUCT()
+USTRUCT(BlueprintType)
 struct FEISItemContainerChangeData
 {
 	GENERATED_USTRUCT_BODY()
 
-	UPROPERTY()
+	UPROPERTY(BlueprintReadOnly)
 	TArray<UEISItem*> AddedItems;
 
-	UPROPERTY()
+	UPROPERTY(BlueprintReadOnly)
 	TArray<UEISItem*> RemovedItems;
 
 	FEISItemContainerChangeData()
@@ -32,16 +33,42 @@ struct FEISItemContainerChangeData
 	}
 };
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnContainerChangeSignature, const FEISItemContainerChangeData&, ContainerChangeData);
+
 UCLASS(DisplayName = "Item Container", EditInlineNew, DefaultToInstanced)
 class ENHANCEDINVENTORYSYSTEM_API UEISItemContainer : public UObject
 {
 	GENERATED_BODY()
 
+	friend UEISInventoryFunctionLibrary;
+	
 public:
+	UPROPERTY(BlueprintAssignable)
+	FOnContainerChangeSignature OnContainerChange;
+	
 	virtual bool IsSupportedForNetworking() const override { return true; }
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual bool ReplicateSubobjects(UActorChannel* Channel, FOutBunch* Bunch, FReplicationFlags* RepFlags);
 	
+	UFUNCTION(BlueprintPure, Category = "EIS|Item Container")
+	bool CanAddItem(const UEISItem* Item) const;
+
+	UFUNCTION(BlueprintPure, Category = "EIS|Item Container")
+	bool Contains(const UEISItem* Item) const;
+
+	UFUNCTION(BlueprintPure, Category = "EIS|Item Container")
+	UEISItem* FindFirstStackForItem(const UEISItem* ForItem) const;
+
+	UFUNCTION(BlueprintPure, Category = "EIS|Item Container")
+	UEISItem* FindItemByDefinition(const UEISItemDefinition* Definition) const;
+
+	UFUNCTION(BlueprintPure, Category = "EIS|Item Container")
+	UEISItem* FindItemByName(const FName& ScriptName) const;
+
+	UFUNCTION(BlueprintPure, Category = "EIS|Item Container")
+	TArray<UEISItem*> GetItems() const { return Items; }
+
+protected:
 	void AddStartingData();
 
 	UFUNCTION(BlueprintCallable, Category = "EIS|Item Container")
@@ -59,24 +86,6 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "EIS|Item Container")
 	bool SplitItem(UEISItem* Item, int Amount);
 
-	UFUNCTION(BlueprintPure, Category = "EIS|Item Container")
-	bool CanAddItem(const UEISItem* Item) const;
-
-	UFUNCTION(BlueprintPure, Category = "EIS|Item Container")
-	bool Contains(const UEISItem* Item) const;
-
-	UFUNCTION(BlueprintPure, Category = "EIS|Item Container")
-	UEISItem* FindStackForItem(const UEISItem* ForItem) const;
-
-	UFUNCTION(BlueprintPure, Category = "EIS|Item Container")
-	UEISItem* FindItemByDefinition(const UEISItemDefinition* Definition) const;
-
-	UFUNCTION(BlueprintPure, Category = "EIS|Item Container")
-	UEISItem* FindItemByName(const FName& ScriptName) const;
-
-	UFUNCTION(BlueprintPure, Category = "EIS|Item Container")
-	TArray<UEISItem*> GetItems() const { return Items; }
-	
 private:
 	UPROPERTY(EditDefaultsOnly, Category = "Item Container")
 	FGameplayTagContainer CategoryTags;
