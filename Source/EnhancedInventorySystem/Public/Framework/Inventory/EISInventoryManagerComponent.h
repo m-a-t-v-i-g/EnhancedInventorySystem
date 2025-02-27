@@ -7,10 +7,10 @@
 #include "Net/Serialization/FastArraySerializer.h"
 #include "EISInventoryManagerComponent.generated.h"
 
-class UItemContainer;
 struct FEISAppliedItemContainers;
 class UEISInventoryManagerComponent;
 class UEISItemContainer;
+class UEISEquipmentSlot;
 class UEISItemInstance;
 
 USTRUCT()
@@ -73,11 +73,11 @@ public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual bool ReplicateSubobjects(UActorChannel* Channel, FOutBunch* Bunch, FReplicationFlags* RepFlags) override;
 
-	UFUNCTION(BlueprintCallable, Category = "EIS|Inventory Manager")
+	UFUNCTION(BlueprintCallable, Category = "Inventory Manager")
 	virtual void SetupInventoryManager(APawn* OwnPawn);
 
-	UFUNCTION(BlueprintCallable, Category = "EIS|Inventory Manager")
-	virtual void ResetInventoryManager();
+	UFUNCTION(BlueprintCallable, Category = "Inventory Manager")
+	virtual void ResetInventoryManager(APawn* OwnPawn);
 
 	UFUNCTION(BlueprintImplementableEvent, DisplayName = "OnSetupInventoryManager")
 	void K2_OnSetupInventoryManager(APawn* OwnPawn);
@@ -85,33 +85,51 @@ public:
 	UFUNCTION(BlueprintImplementableEvent, DisplayName = "OnResetInventoryManager")
 	void K2_OnResetInventoryManager();
 
-	UFUNCTION(BlueprintCallable, Category = "EIS|Inventory Manager")
+	UFUNCTION(BlueprintCallable, Category = "Inventory Manager")
 	void AddReplicatedContainer(UEISItemContainer* Container);
 
-	UFUNCTION(BlueprintCallable, Category = "EIS|Inventory Manager")
+	UFUNCTION(BlueprintCallable, Category = "Inventory Manager")
 	void RemoveReplicatedContainer(UEISItemContainer* Container);
+
+	UFUNCTION(BlueprintCallable, Category = "Inventory Manager")
+	void AddReplicatedSlot(UEISEquipmentSlot* EquipmentSlot);
+
+	UFUNCTION(BlueprintCallable, Category = "Inventory Manager")
+	void RemoveReplicatedSlot(UEISEquipmentSlot* EquipmentSlot);
 
 protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	
-	UFUNCTION(BlueprintCallable, Category = "EIS|Inventory Manager|Container")
+	UFUNCTION(BlueprintCallable, Category = "Inventory Manager|Container")
 	void Container_AddItem(UObject* FromSource, UEISItemContainer* ToContainer, UEISItemInstance* Item);
 
-	UFUNCTION(BlueprintCallable, Category = "EIS|Inventory Manager|Container")
+	UFUNCTION(BlueprintCallable, Category = "Inventory Manager|Container")
 	void Container_RemoveItem(UEISItemContainer* Container, UEISItemInstance* Item);
 
-	UFUNCTION(BlueprintCallable, Category = "EIS|Inventory Manager|Container")
+	UFUNCTION(BlueprintCallable, Category = "Inventory Manager|Container")
 	void Container_StackItem(UObject* FromSource, UEISItemContainer* InContainer, UEISItemInstance* SourceItem, UEISItemInstance* TargetItem);
 
-	UFUNCTION(BlueprintCallable, Category = "EIS|Inventory Manager|Container")
+	UFUNCTION(BlueprintCallable, Category = "Inventory Manager|Container")
 	void Container_SplitItem(UEISItemContainer* Container, UEISItemInstance* Item, int Amount);
 
-	UFUNCTION(BlueprintCallable, Category = "EIS|Inventory Manager|Container")
-	void Container_MoveItemToOtherContainer(UEISItemContainer* FromContainer, UEISItemContainer* ToContainer,
-	                                        UEISItemInstance* Item);
+	UFUNCTION(BlueprintCallable, Category = "Inventory Manager|Slot")
+	void Slot_TryEquipAny(UObject* Source, UEISItemInstance* Item);
 
-	UFUNCTION(BlueprintCallable, Category = "EIS|Inventory Manager|Container")
+	UFUNCTION(BlueprintCallable, Category = "Inventory Manager|Slot")
+	void EquipSlot(UObject* FromSource, UEISEquipmentSlot* AtEquipmentSlot, UEISItemInstance* Item);
+
+	UFUNCTION(BlueprintCallable, Category = "Inventory Manager|Slot")
+	void UnequipSlot(UEISEquipmentSlot* EquipmentSlot);
+
+	UFUNCTION(BlueprintCallable, Category = "Inventory Manager|Container")
+	void MoveItemFromContainerToContainer(UEISItemContainer* FromContainer, UEISItemContainer* ToContainer,
+	                                      UEISItemInstance* Item);
+
+	UFUNCTION(BlueprintCallable, Category = "Inventory Manager|Slot")
+	void MoveItemFromSlotToContainer(UEISEquipmentSlot* SourceSlot, UEISItemContainer* TargetContainer);
+	
+	UFUNCTION(BlueprintCallable, Category = "Inventory Manager|Container")
 	virtual void RemoveItemFromSource(UObject* Source, UEISItemInstance* Item);
 	
 private:

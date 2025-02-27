@@ -33,7 +33,8 @@ struct FEISItemContainerChangeData
 	}
 };
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnContainerChangeSignature, const FEISItemContainerChangeData&, ContainerChangeData);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnContainerChangeSignature, const FEISItemContainerChangeData&,
+                                            ContainerChangeData);
 
 UCLASS(DisplayName = "Item Container", Abstract, EditInlineNew, DefaultToInstanced)
 class ENHANCEDINVENTORYSYSTEM_API UEISItemContainer : public UObject
@@ -52,38 +53,38 @@ public:
 	
 	void AddStartingData();
 
-	UFUNCTION(BlueprintPure, Category = "EIS|Item Container")
+	UFUNCTION(BlueprintPure, Category = "Item Container")
 	bool CanAddItem(const UEISItemInstance* Item) const;
 
-	UFUNCTION(BlueprintPure, Category = "EIS|Item Container")
+	UFUNCTION(BlueprintPure, Category = "Item Container")
 	bool Contains(const UEISItemInstance* Item) const;
 
-	UFUNCTION(BlueprintPure, Category = "EIS|Item Container")
+	UFUNCTION(BlueprintPure, Category = "Item Container")
 	UEISItemInstance* FindFirstStackForItem(const UEISItemInstance* ForItem) const;
 
-	UFUNCTION(BlueprintPure, Category = "EIS|Item Container")
+	UFUNCTION(BlueprintPure, Category = "Item Container")
 	UEISItemInstance* FindItemByDefinition(const UEISItemDefinition* Definition) const;
 
-	UFUNCTION(BlueprintPure, Category = "EIS|Item Container")
+	UFUNCTION(BlueprintPure, Category = "Item Container")
 	UEISItemInstance* FindItemByName(const FName& ScriptName) const;
 
-	UFUNCTION(BlueprintPure, Category = "EIS|Item Container")
+	UFUNCTION(BlueprintPure, Category = "Item Container")
 	TArray<UEISItemInstance*> GetItems() const { return Items; }
 
 protected:
-	UFUNCTION(BlueprintCallable, Category = "EIS|Item Container")
+	UFUNCTION(BlueprintCallable, Category = "Item Container")
 	bool FindAvailablePlace(UEISItemInstance* Item);
 	
-	UFUNCTION(BlueprintCallable, Category = "EIS|Item Container")
+	UFUNCTION(BlueprintCallable, Category = "Item Container")
 	void AddItem(UEISItemInstance* Item);
 
-	UFUNCTION(BlueprintCallable, Category = "EIS|Item Container")
+	UFUNCTION(BlueprintCallable, Category = "Item Container")
 	void RemoveItem(UEISItemInstance* Item);
 
-	UFUNCTION(BlueprintCallable, Category = "EIS|Item Container")
+	UFUNCTION(BlueprintCallable, Category = "Item Container")
 	bool StackItem(UEISItemInstance* SourceItem, UEISItemInstance* TargetItem);
 
-	UFUNCTION(BlueprintCallable, Category = "EIS|Item Container")
+	UFUNCTION(BlueprintCallable, Category = "Item Container")
 	bool SplitItem(UEISItemInstance* Item, int Amount);
 
 private:

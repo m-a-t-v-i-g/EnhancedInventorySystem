@@ -161,6 +161,12 @@ public:
 	UFUNCTION(BlueprintImplementableEvent, DisplayName = "OnAddToContainer")
 	void K2_OnAddToContainer();
 	
+	void AddToEquipmentSlot();
+	virtual void OnAddToEquipmentSlot();
+	
+	UFUNCTION(BlueprintImplementableEvent, DisplayName = "AddToEquipmentSlot")
+	void K2_AddToEquipmentSlot();
+	
 	UFUNCTION(BlueprintPure, Category = "Item")
 	virtual bool CanStackItem(const UEISItemInstance* OtherItem) const;
 

@@ -197,6 +197,11 @@ void UEISItemContainer::OnRep_Items(TArray<UEISItemInstance*> PrevContainer)
 			continue;
 		}
 
+		if (Item)
+		{
+			Item->AddToContainer();
+		}
+
 		AddedItems.AddUnique(Item);
 	}
 	

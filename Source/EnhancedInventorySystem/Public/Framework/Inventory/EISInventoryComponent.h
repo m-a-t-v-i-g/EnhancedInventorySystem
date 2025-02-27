@@ -17,25 +17,25 @@ class ENHANCEDINVENTORYSYSTEM_API UEISInventoryComponent : public UGameFramework
 public:
 	UEISInventoryComponent(const FObjectInitializer& ObjectInitializer);
 
-	UFUNCTION(BlueprintCallable, Category = "EIS|Inventory Component")
+	UFUNCTION(BlueprintCallable, Category = "Inventory Component")
 	void FindAvailablePlace(UEISItemInstance* Item);
 
-	UFUNCTION(BlueprintCallable, Category = "EIS|Inventory Component")
+	UFUNCTION(BlueprintCallable, Category = "Inventory Component")
 	void AddItem(UEISItemInstance* Item);
 
-	UFUNCTION(BlueprintCallable, Category = "EIS|Inventory Component")
+	UFUNCTION(BlueprintCallable, Category = "Inventory Component")
 	void RemoveItem(UEISItemInstance* Item);
 
-	UFUNCTION(BlueprintCallable, Category = "EIS|Inventory Component")
+	UFUNCTION(BlueprintCallable, Category = "Inventory Component")
 	void StackItem(UEISItemInstance* SourceItem, UEISItemInstance* TargetItem);
 
-	UFUNCTION(BlueprintCallable, Category = "EIS|Inventory Component")
+	UFUNCTION(BlueprintCallable, Category = "Inventory Component")
 	void SplitItem(UEISItemInstance* Item, int Amount);
 	
-	UFUNCTION(BlueprintCallable, Category = "EIS|Inventory Component")
+	UFUNCTION(BlueprintCallable, Category = "Inventory Component")
 	void SetItemContainer(UEISItemContainer* NewItemContainer);
 
-	UFUNCTION(BlueprintPure, Category = "EIS|Inventory Component")
+	UFUNCTION(BlueprintPure, Category = "Inventory Component")
 	FORCEINLINE UEISItemContainer* GetItemContainer() const { return ItemContainer; }
 
 	template <class T>

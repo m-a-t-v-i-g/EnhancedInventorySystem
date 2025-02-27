@@ -1,6 +1,8 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #include "EISInventoryFunctionLibrary.h"
+
+#include "EISEquipmentSlot.h"
 #include "EISItemInstance.h"
 #include "EISItemContainer.h"
 
@@ -73,15 +75,41 @@ void UEISInventoryFunctionLibrary::Container_SplitItem(UEISItemContainer* Contai
 	Container->SplitItem(Item, Amount);
 }
 
-void UEISInventoryFunctionLibrary::Container_MoveItemToOtherContainer(UEISItemContainer* SourceContainer,
-                                                                      UEISItemContainer* TargetContainer,
-                                                                      UEISItemInstance* Item, bool bFullStack)
+void UEISInventoryFunctionLibrary::Slot_EquipItem(UEISEquipmentSlot* EquipmentSlot, UEISItemInstance* Item)
+{
+	if (!EquipmentSlot || !Item)
+	{
+		return;
+	}
+
+	if (!EquipmentSlot->IsEquipped())
+	{
+		EquipmentSlot->EquipSlot(Item);
+	}
+}
+
+void UEISInventoryFunctionLibrary::Slot_UnequipItem(UEISEquipmentSlot* EquipmentSlot)
+{
+	if (!EquipmentSlot)
+	{
+		return;
+	}
+
+	if (EquipmentSlot->IsEquipped())
+	{
+		EquipmentSlot->UnequipSlot();
+	}
+}
+
+void UEISInventoryFunctionLibrary::MoveItemFromContainerToContainer(UEISItemContainer* SourceContainer,
+																	UEISItemContainer* TargetContainer,
+																	UEISItemInstance* Item, bool bFullStack)
 {
 	if (!SourceContainer || !TargetContainer || !Item)
 	{
 		return;
 	}
-	
+
 	if (!bFullStack && Item->GetAmount() > Item->GetStackAmount())
 	{
 		if (UEISItemInstance* StackableItem = TargetContainer->FindFirstStackForItem(Item))
@@ -93,7 +121,7 @@ void UEISInventoryFunctionLibrary::Container_MoveItemToOtherContainer(UEISItemCo
 			NewItem->SetAmount(NewItem->GetStackAmount());
 			Container_AddItem(TargetContainer, NewItem);
 		}
-		
+
 		Item->RemoveAmount(Item->GetStackAmount());
 	}
 	else
@@ -102,5 +130,20 @@ void UEISInventoryFunctionLibrary::Container_MoveItemToOtherContainer(UEISItemCo
 		{
 			Container_RemoveItem(SourceContainer, Item);
 		}
+	}
+}
+
+void UEISInventoryFunctionLibrary::MoveItemFromSlotToContainer(UEISEquipmentSlot* SourceSlot,
+                                                               UEISItemContainer* TargetContainer)
+{
+	if (!SourceSlot || !TargetContainer)
+	{
+		return;
+	}
+
+	if (UEISItemInstance* OldItemInstance = SourceSlot->GetItemInstance())
+	{
+		Slot_UnequipItem(SourceSlot);
+		Container_AddItem(TargetContainer, OldItemInstance);
 	}
 }

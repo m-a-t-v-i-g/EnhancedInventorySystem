@@ -7,6 +7,7 @@
 #include "EISInventoryFunctionLibrary.generated.h"
 
 class UEISItemContainer;
+class UEISEquipmentSlot;
 class UEISItemInstance;
 
 UCLASS()
@@ -15,28 +16,37 @@ class ENHANCEDINVENTORYSYSTEM_API UEISInventoryFunctionLibrary : public UBluepri
 	GENERATED_BODY()
 
 public:
-	UFUNCTION(BlueprintCallable, Category = "EIS|Inventory Function Library")
+	UFUNCTION(BlueprintCallable, Category = "Inventory Function Library")
 	static UEISItemInstance* GenerateItem(UWorld* World, const UEISItemInstance* SourceItem);
 
-	UFUNCTION(BlueprintCallable, Category = "EIS|Inventory Function Library")
+	UFUNCTION(BlueprintCallable, Category = "Inventory Function Library|Container")
 	static bool Container_FindAvailablePlace(UEISItemContainer* Container, UEISItemInstance* Item);
 	
-	UFUNCTION(BlueprintCallable, Category = "EIS|Inventory Function Library")
+	UFUNCTION(BlueprintCallable, Category = "Inventory Function Library|Container")
 	static void Container_AddItem(UEISItemContainer* Container, UEISItemInstance* Item);
 
-	UFUNCTION(BlueprintCallable, Category = "EIS|Inventory Function Library")
+	UFUNCTION(BlueprintCallable, Category = "Inventory Function Library|Container")
 	static void Container_RemoveItem(UEISItemContainer* Container, UEISItemInstance* Item);
 
-	UFUNCTION(BlueprintCallable, Category = "EIS|Inventory Function Library")
+	UFUNCTION(BlueprintCallable, Category = "Inventory Function Library|Container")
 	static bool Container_StackItem(UEISItemContainer* Container, UEISItemInstance* SourceItem, UEISItemInstance* TargetItem);
 	
-	UFUNCTION(BlueprintCallable, Category = "EIS|Inventory Function Library")
+	UFUNCTION(BlueprintCallable, Category = "Inventory Function Library|Container")
 	static void Container_SplitItem(UEISItemContainer* Container, UEISItemInstance* Item, int Amount);
 
-	UFUNCTION(BlueprintCallable, Category = "EIS|Inventory Function Library")
-	static void Container_MoveItemToOtherContainer(UEISItemContainer* SourceContainer,
-	                                               UEISItemContainer* TargetContainer, UEISItemInstance* Item,
-	                                               bool bFullStack = false);
+	UFUNCTION(BlueprintCallable, Category = "Inventory Function Library|Slot")
+	static void Slot_EquipItem(UEISEquipmentSlot* EquipmentSlot, UEISItemInstance* Item);
+
+	UFUNCTION(BlueprintCallable, Category = "Inventory Function Library|Slot")
+	static void Slot_UnequipItem(UEISEquipmentSlot* EquipmentSlot);
+
+	UFUNCTION(BlueprintCallable, Category = "Inventory Function Library|Container")
+	static void MoveItemFromContainerToContainer(UEISItemContainer* SourceContainer,
+	                                             UEISItemContainer* TargetContainer, UEISItemInstance* Item,
+	                                             bool bFullStack = false);
+
+	UFUNCTION(BlueprintCallable, Category = "Inventory Function Library|Slot")
+	static void MoveItemFromSlotToContainer(UEISEquipmentSlot* SourceSlot, UEISItemContainer* TargetContainer);
 
 private:
 	static int LastItemId;

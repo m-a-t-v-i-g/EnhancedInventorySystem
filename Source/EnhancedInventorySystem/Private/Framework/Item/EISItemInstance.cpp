@@ -107,6 +107,17 @@ void UEISItemInstance::OnAddToContainer()
 	
 }
 
+void UEISItemInstance::AddToEquipmentSlot()
+{
+	OnAddToEquipmentSlot();
+	K2_AddToEquipmentSlot();
+}
+
+void UEISItemInstance::OnAddToEquipmentSlot()
+{
+	
+}
+
 bool UEISItemInstance::CanStackItem(const UEISItemInstance* OtherItem) const
 {
 	check(OtherItem);

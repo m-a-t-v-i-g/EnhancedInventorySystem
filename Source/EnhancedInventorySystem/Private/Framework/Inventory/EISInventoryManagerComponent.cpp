@@ -1,6 +1,8 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #include "EISInventoryManagerComponent.h"
+#include "EISEquipmentComponent.h"
+#include "EISEquipmentSlot.h"
 #include "EISInventoryComponent.h"
 #include "EISInventoryFunctionLibrary.h"
 #include "EISItemContainer.h"
@@ -79,21 +81,45 @@ void UEISInventoryManagerComponent::RemoveReplicatedContainer(UEISItemContainer*
 	ReplicatedContainers.RemoveEntry(Container);
 }
 
+void UEISInventoryManagerComponent::AddReplicatedSlot(UEISEquipmentSlot* EquipmentSlot)
+{
+	
+}
+
+void UEISInventoryManagerComponent::RemoveReplicatedSlot(UEISEquipmentSlot* EquipmentSlot)
+{
+	
+}
+
 void UEISInventoryManagerComponent::SetupInventoryManager(APawn* OwnPawn)
 {
 	if (OwnPawn != nullptr)
 	{
 		auto InventoryComponent = OwnPawn->GetComponentByClass<UEISInventoryComponent>();
-		if (!InventoryComponent)
+		if (InventoryComponent != nullptr)
 		{
-			return;
+			if (UEISItemContainer* ItemsContainer = InventoryComponent->GetItemContainer())
+			{
+				if (HasAuthority())
+				{
+					AddReplicatedContainer(ItemsContainer);
+				}
+			}
 		}
 
-		if (UEISItemContainer* ItemsContainer = InventoryComponent->GetItemContainer())
+		auto EquipmentComponent = OwnPawn->GetComponentByClass<UEISEquipmentComponent>();
+		if (EquipmentComponent != nullptr)
 		{
-			if (HasAuthority())
+			TArray<UEISEquipmentSlot*> Slots = EquipmentComponent->GetEquipmentSlots();
+			if (!Slots.IsEmpty())
 			{
-				AddReplicatedContainer(ItemsContainer);
+				if (HasAuthority())
+				{
+					for (UEISEquipmentSlot* Slot : Slots)
+					{
+						AddReplicatedSlot(Slot);
+					}
+				}
 			}
 		}
 	}
@@ -101,7 +127,7 @@ void UEISInventoryManagerComponent::SetupInventoryManager(APawn* OwnPawn)
 	K2_OnSetupInventoryManager(OwnPawn);
 }
 
-void UEISInventoryManagerComponent::ResetInventoryManager()
+void UEISInventoryManagerComponent::ResetInventoryManager(APawn* OwnPawn)
 {
 	ReplicatedContainers.Clear();
 
@@ -120,7 +146,7 @@ void UEISInventoryManagerComponent::BeginPlay()
 
 void UEISInventoryManagerComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	ResetInventoryManager();
+	ResetInventoryManager(GetPawn<APawn>());
 	
 	Super::EndPlay(EndPlayReason);
 }
@@ -210,8 +236,44 @@ void UEISInventoryManagerComponent::Container_SplitItem(UEISItemContainer* Conta
 	ServerSplitItem(Container, Item, Amount);
 }
 
-void UEISInventoryManagerComponent::Container_MoveItemToOtherContainer(UEISItemContainer* FromContainer,
-                                                                       UEISItemContainer* ToContainer, UEISItemInstance* Item)
+void UEISInventoryManagerComponent::Slot_TryEquipAny(UObject* Source, UEISItemInstance* Item)
+{
+	check(Item);
+
+	if (!GetController<AController>())
+	{
+		return;
+	}
+
+
+}
+
+void UEISInventoryManagerComponent::EquipSlot(UObject* FromSource, UEISEquipmentSlot* AtEquipmentSlot,
+                                              UEISItemInstance* Item)
+{
+	check(FromSource);
+	check(AtEquipmentSlot);
+	check(Item);
+
+	if (!GetController<AController>())
+	{
+		return;
+	}
+}
+
+void UEISInventoryManagerComponent::UnequipSlot(UEISEquipmentSlot* EquipmentSlot)
+{
+	check(EquipmentSlot);
+
+	if (!GetController<AController>())
+	{
+		return;
+	}
+}
+
+void UEISInventoryManagerComponent::MoveItemFromContainerToContainer(UEISItemContainer* FromContainer,
+                                                                     UEISItemContainer* ToContainer,
+                                                                     UEISItemInstance* Item)
 {
 	check(FromContainer);
 	check(ToContainer);
@@ -224,7 +286,21 @@ void UEISInventoryManagerComponent::Container_MoveItemToOtherContainer(UEISItemC
 
 	if (!HasAuthority() && IsLocalController())
 	{
-		UEISInventoryFunctionLibrary::Container_MoveItemToOtherContainer(FromContainer, ToContainer, Item);
+		UEISInventoryFunctionLibrary::MoveItemFromContainerToContainer(FromContainer, ToContainer, Item);
+	}
+
+	// TODO
+}
+
+void UEISInventoryManagerComponent::MoveItemFromSlotToContainer(UEISEquipmentSlot* SourceSlot,
+                                                                UEISItemContainer* TargetContainer)
+{
+	check(SourceSlot);
+	check(SourceSlot);
+
+	if (!GetController<AController>())
+	{
+		return;
 	}
 }
 
@@ -235,6 +311,15 @@ void UEISInventoryManagerComponent::RemoveItemFromSource(UObject* Source, UEISIt
 		if (SourceContainer->Contains(Item))
 		{
 			UEISInventoryFunctionLibrary::Container_RemoveItem(SourceContainer, Item);
+		}
+		return;
+	}
+
+	if (auto SourceSlot = Cast<UEISEquipmentSlot>(Source))
+	{
+		if (SourceSlot->IsEquipped())
+		{
+			UEISInventoryFunctionLibrary::Slot_UnequipItem(SourceSlot);
 		}
 		return;
 	}
