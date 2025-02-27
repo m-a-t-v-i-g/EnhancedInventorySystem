@@ -7,7 +7,7 @@
 #include "Net/Serialization/FastArraySerializer.h"
 #include "EISInventoryManagerComponent.generated.h"
 
-class UItemsContainer;
+class UItemContainer;
 struct FEISAppliedItemContainers;
 class UEISInventoryManagerComponent;
 class UEISItemContainer;
@@ -62,7 +62,7 @@ private:
 	UEISInventoryManagerComponent* InventoryManagerComponent = nullptr;
 };
 
-UCLASS(DisplayName = "Inventory Manager Component", Abstract, ClassGroup = "EIS", meta = (BlueprintSpawnableComponent))
+UCLASS(DisplayName = "Inventory Manager Component", Abstract)
 class ENHANCEDINVENTORYSYSTEM_API UEISInventoryManagerComponent : public UControllerComponent
 {
 	GENERATED_BODY()
@@ -132,5 +132,4 @@ private:
 
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerSplitItem(UEISItemContainer* Container, UEISItemInstance* Item, int Amount);
-
 };

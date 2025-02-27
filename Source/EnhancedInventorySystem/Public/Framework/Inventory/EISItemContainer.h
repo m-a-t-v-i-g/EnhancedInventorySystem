@@ -35,7 +35,7 @@ struct FEISItemContainerChangeData
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnContainerChangeSignature, const FEISItemContainerChangeData&, ContainerChangeData);
 
-UCLASS(DisplayName = "Item Container", EditInlineNew, DefaultToInstanced)
+UCLASS(DisplayName = "Item Container", Abstract, EditInlineNew, DefaultToInstanced)
 class ENHANCEDINVENTORYSYSTEM_API UEISItemContainer : public UObject
 {
 	GENERATED_BODY()

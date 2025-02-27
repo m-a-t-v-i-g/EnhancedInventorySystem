@@ -9,7 +9,7 @@
 class UEISItemContainer;
 class UEISItemInstance;
 
-UCLASS(DisplayName = "Inventory Component", Abstract, ClassGroup = "EIS", meta = (BlueprintSpawnableComponent))
+UCLASS(DisplayName = "Inventory Component", Abstract)
 class ENHANCEDINVENTORYSYSTEM_API UEISInventoryComponent : public UGameFrameworkComponent
 {
 	GENERATED_BODY()
@@ -38,6 +38,12 @@ public:
 	UFUNCTION(BlueprintPure, Category = "EIS|Inventory Component")
 	FORCEINLINE UEISItemContainer* GetItemContainer() const { return ItemContainer; }
 
+	template <class T>
+	T* GetItemContainer() const
+	{
+		return Cast<T>(GetItemContainer());
+	}
+	
 protected:
 	virtual void BeginPlay() override;
 	

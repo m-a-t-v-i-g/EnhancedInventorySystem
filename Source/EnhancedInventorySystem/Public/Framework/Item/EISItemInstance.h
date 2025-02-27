@@ -7,6 +7,7 @@
 #include "UObject/Object.h"
 #include "EISItemInstance.generated.h"
 
+class UEISItemInstanceComponent;
 class UEISItemInstance;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FItemInstanceSignature, UEISItemInstance*, Item);
@@ -18,10 +19,10 @@ struct FEISItemInstanceData
 {
 	GENERATED_USTRUCT_BODY()
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
+	UPROPERTY(VisibleInstanceOnly, Category = "Item")
 	int ItemId = 0;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item", meta = (ClampMin = "1"))
+	UPROPERTY(VisibleInstanceOnly, Category = "Item", meta = (ClampMin = "1"))
 	int Amount = 1;
 };
 
@@ -37,13 +38,16 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Class")
 	FGameplayTagContainer Tags;
 	
+	UPROPERTY(EditAnywhere, Instanced, Category = "Components")
+	TArray<UEISItemInstanceComponent*> Components;
+	
 	UPROPERTY(EditAnywhere, Category = "Properties|Stacking")
 	bool bStackable = false;
 	
 	UPROPERTY(EditAnywhere, Category = "Properties|Stacking", meta = (EditCondition = "bStackable", ClampMin = "1"))
 	int StackAmount = 1;
 	
-	UPROPERTY(EditAnywhere, Category = "Properties|Stacking")
+	UPROPERTY(EditAnywhere, Category = "Properties|Stacking", meta = (EditCondition = "bStackable"))
 	bool bHasStackMaximum = false;
 	
 	UPROPERTY(EditAnywhere, Category = "Properties|Stacking",
@@ -51,7 +55,7 @@ public:
 	int StackMaximum = 1;
 };
 
-UCLASS(Abstract, BlueprintType, Blueprintable, EditInlineNew, DefaultToInstanced, Within = "EISItemInstance")
+UCLASS(Abstract, BlueprintType, Blueprintable, EditInlineNew, DefaultToInstanced, Within = "EISItemDefinition")
 class ENHANCEDINVENTORYSYSTEM_API UEISItemInstanceComponent : public UObject
 {
 	GENERATED_BODY()
@@ -137,15 +141,19 @@ public:
 
 #pragma region Components
 
-	UFUNCTION(BlueprintPure, Category = "EIS|Item|Components")
-	TArray<UEISItemInstanceComponent*> GetComponents() const { return Components; }
+	UFUNCTION(BlueprintPure, Category = "Item|Components")
+	TArray<UEISItemInstanceComponent*> GetComponents() const;
 	
 #pragma endregion Components
 
-	void OnCreate(int InItemId, const UEISItemInstance* SourceItem);
+#pragma region Item Interface
 
-	UFUNCTION(BlueprintImplementableEvent, DisplayName = "OnCreate")
-	void K2_OnCreate(const UEISItemInstance* SourceItem);
+	void Initialize(int InItemId, const UEISItemInstance* SourceItem);
+
+	virtual void OnInitialize(const UEISItemInstance* SourceItem);
+
+	UFUNCTION(BlueprintImplementableEvent, DisplayName = "OnInitialize")
+	void K2_OnInitialize(const UEISItemInstance* SourceItem);
 	
 	void AddToContainer();
 	virtual void OnAddToContainer();
@@ -159,6 +167,8 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Item")
 	virtual bool IsMatchItem(const UEISItemInstance* OtherItem) const;
 
+#pragma endregion Item Interface
+
 protected:
 	UPROPERTY(EditInstanceOnly, Replicated, Category = "Item")
 	FEISItemInstanceData ItemInstanceData;
@@ -166,7 +176,4 @@ protected:
 private:
 	UPROPERTY(EditAnywhere, Category = "Item")
 	TObjectPtr<UEISItemDefinition> ItemDefinition;
-	
-	UPROPERTY(EditAnywhere, Instanced, Category = "Item")
-	TArray<UEISItemInstanceComponent*> Components;
 };

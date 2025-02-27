@@ -79,11 +79,21 @@ void UEISItemInstance::OnUpdateAmount(int NewAmount, int PrevAmount)
 {
 }
 
-void UEISItemInstance::OnCreate(int InItemId, const UEISItemInstance* SourceItem)
+TArray<UEISItemInstanceComponent*> UEISItemInstance::GetComponents() const
+{
+	return GetDefinition()->Components;
+}
+
+void UEISItemInstance::Initialize(int InItemId, const UEISItemInstance* SourceItem)
 {
 	ItemInstanceData.ItemId = InItemId;
-	K2_OnCreate(SourceItem);
+	OnInitialize(SourceItem);
+	K2_OnInitialize(SourceItem);
 	OnItemCreate.Broadcast(this);
+}
+
+void UEISItemInstance::OnInitialize(const UEISItemInstance* SourceItem)
+{
 }
 
 void UEISItemInstance::AddToContainer()
@@ -106,26 +116,7 @@ bool UEISItemInstance::CanStackItem(const UEISItemInstance* OtherItem) const
 bool UEISItemInstance::IsMatchItem(const UEISItemInstance* OtherItem) const
 {
 	check(OtherItem);
-	
-	bool bResult = GetDefinition() == OtherItem->GetDefinition();
-	if (bResult)
-	{
-		TArray<UEISItemInstanceComponent*> ItemComponents = GetComponents();
-		TArray<UEISItemInstanceComponent*> OtherComponents = OtherItem->GetComponents();
-			
-		for (uint8 i = 0; i < ItemComponents.Num(); i++)
-		{
-			if (OtherComponents.IsValidIndex(i))
-			{
-				bResult &= ItemComponents[i] == OtherComponents[i];
-				if (!bResult)
-				{
-					break;
-				}
-			}
-		}
-	}
-	return bResult;
+	return GetDefinition() == OtherItem->GetDefinition();
 }
 
 UEISItemInstance* UEISItemInstanceComponent::GetOwner() const

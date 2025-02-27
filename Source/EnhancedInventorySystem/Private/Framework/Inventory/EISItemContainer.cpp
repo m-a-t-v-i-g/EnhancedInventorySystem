@@ -139,6 +139,7 @@ void UEISItemContainer::AddItem(UEISItemInstance* Item)
 	if (Item && CanAddItem(Item))
 	{
 		Items.Add(Item);
+		Item->OnAddToContainer();
 		OnContainerChange.Broadcast(FEISItemContainerChangeData(TArray{Item}, {}));
 	}
 }

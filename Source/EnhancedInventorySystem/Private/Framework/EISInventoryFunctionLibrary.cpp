@@ -15,7 +15,7 @@ UEISItemInstance* UEISInventoryFunctionLibrary::GenerateItem(UWorld* World, cons
 			                                            TEXT("_object%d"), LastItemId + 1))))
 		{
 			LastItemId++;
-			NewItem->OnCreate(LastItemId, SourceItem);
+			NewItem->Initialize(LastItemId, SourceItem);
 			return NewItem;
 		}
 	}
@@ -40,7 +40,6 @@ void UEISInventoryFunctionLibrary::Container_AddItem(UEISItemContainer* Containe
 	}
 
 	Container->AddItem(Item);
-	Item->OnAddToContainer();
 }
 
 void UEISInventoryFunctionLibrary::Container_RemoveItem(UEISItemContainer* Container, UEISItemInstance* Item)
