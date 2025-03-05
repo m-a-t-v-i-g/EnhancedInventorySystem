@@ -25,6 +25,12 @@ bool UEISEquipmentSlot::ReplicateSubobjects(UActorChannel* Channel, FOutBunch* B
 	return bReplicateSomething;
 }
 
+void UEISEquipmentSlot::SetupEquipmentSlot(FString InSlotName, FGameplayTagContainer InSlotTags)
+{
+	SlotName = InSlotName;
+	CategoryTags = InSlotTags;
+}
+
 void UEISEquipmentSlot::AddStartingData()
 {
 }
@@ -42,12 +48,18 @@ bool UEISEquipmentSlot::CanEquipItem(const UEISItemInstance* Item) const
 	return false;
 }
 
+void UEISEquipmentSlot::CallRemoveItem(UEISItemInstance* Item)
+{
+	UnequipSlot();
+}
+
 void UEISEquipmentSlot::EquipSlot(UEISItemInstance* InItemInstance)
 {
 	check(InItemInstance);
 
 	ItemInstance = InItemInstance;
-	ItemInstance->OnAddToEquipmentSlot();
+	ItemInstance->AddToEquipmentSlot(this);
+	OnEquipmentSlotChangeDelegate.Broadcast(FEISEquipmentSlotChangeData(SlotName, ItemInstance.Get(), IsEquipped()));
 	OnEquipmentSlotChange.Broadcast(FEISEquipmentSlotChangeData(SlotName, ItemInstance.Get(), IsEquipped()));
 }
 
@@ -57,6 +69,7 @@ void UEISEquipmentSlot::UnequipSlot()
 
 	UEISItemInstance* PrevObject = ItemInstance;
 	ItemInstance = nullptr;
+	OnEquipmentSlotChangeDelegate.Broadcast(FEISEquipmentSlotChangeData(SlotName, ItemInstance.Get(), IsEquipped()));
 	OnEquipmentSlotChange.Broadcast(FEISEquipmentSlotChangeData(SlotName, PrevObject, IsEquipped()));
 }
 
@@ -72,9 +85,10 @@ void UEISEquipmentSlot::OnRep_ItemInstance(UEISItemInstance* PrevItem)
 	{
 		if (ItemInstance)
 		{
-			ItemInstance->OnAddToEquipmentSlot();
+			ItemInstance->AddToEquipmentSlot(this);
 		}
-		
+
+		OnEquipmentSlotChangeDelegate.Broadcast(FEISEquipmentSlotChangeData(SlotName, ItemInstance.Get(), IsEquipped()));
 		OnEquipmentSlotChange.Broadcast(FEISEquipmentSlotChangeData(SlotName, ItemInst, IsEquipped()));
 	}
 }

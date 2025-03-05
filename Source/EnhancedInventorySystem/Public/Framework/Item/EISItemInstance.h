@@ -11,8 +11,10 @@ class UEISItemInstanceComponent;
 class UEISItemInstance;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FItemInstanceSignature, UEISItemInstance*, Item);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FItemIntValueChangeSignature, int, NewAmount, int, PrevAmount);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FItemFloatValueChangeSignature, float, NewAmount, float, PrevAmount);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FItemIntValueChangeSignature, UEISItemInstance*, Item, int, NewAmount,
+                                               int, PrevAmount);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FItemFloatValueChangeSignature, UEISItemInstance*, Item, float,
+                                               NewAmount, float, PrevAmount);
 
 USTRUCT(DisplayName = "Item Instance Data", BlueprintType, Blueprintable)
 struct FEISItemInstanceData
@@ -71,7 +73,7 @@ public:
 	}
 };
 
-UCLASS(DisplayName = "Item Instance", Abstract, BlueprintType, Blueprintable, EditInlineNew, DefaultToInstanced)
+UCLASS(DisplayName = "Item Instance", Abstract, BlueprintType, Blueprintable)
 class ENHANCEDINVENTORYSYSTEM_API UEISItemInstance : public UObject
 {
 	GENERATED_BODY()
@@ -79,8 +81,12 @@ class ENHANCEDINVENTORYSYSTEM_API UEISItemInstance : public UObject
 public:
 	UEISItemInstance(const FObjectInitializer& ObjectInitializer);
 
+	TMulticastDelegate<void(UEISItemInstance*)> OnItemCreateDelegate;
+	
 	UPROPERTY(BlueprintAssignable)
 	FItemInstanceSignature OnItemCreate;
+
+	TMulticastDelegate<void(int, int)> OnAmountChangeDelegate;
 	
 	UPROPERTY(BlueprintAssignable)
 	FItemIntValueChangeSignature OnAmountChange;
@@ -140,7 +146,16 @@ public:
 #pragma endregion Amount
 
 #pragma region Components
-
+	
+	UFUNCTION(BlueprintPure, Category = "Item|Components")
+	UEISItemInstanceComponent* GetComponentByClass(TSubclassOf<UEISItemInstanceComponent> ItemComponentClass) const;
+	
+	template <class T>
+	T* GetComponentByClass(UClass* ItemComponentClass) const
+	{
+		return Cast<T>(GetComponentByClass(ItemComponentClass));
+	}
+	
 	UFUNCTION(BlueprintPure, Category = "Item|Components")
 	TArray<UEISItemInstanceComponent*> GetComponents() const;
 	
@@ -154,18 +169,18 @@ public:
 
 	UFUNCTION(BlueprintImplementableEvent, DisplayName = "OnInitialize")
 	void K2_OnInitialize(const UEISItemInstance* SourceItem);
-	
-	void AddToContainer();
-	virtual void OnAddToContainer();
+
+	void AddToContainer(UObject* Owner);
+	virtual void OnAddToContainer(UObject* Owner);
 	
 	UFUNCTION(BlueprintImplementableEvent, DisplayName = "OnAddToContainer")
-	void K2_OnAddToContainer();
+	void K2_OnAddToContainer(UObject* Owner);
 	
-	void AddToEquipmentSlot();
-	virtual void OnAddToEquipmentSlot();
+	void AddToEquipmentSlot(UObject* Owner);
+	virtual void OnAddToEquipmentSlot(UObject* Owner);
 	
 	UFUNCTION(BlueprintImplementableEvent, DisplayName = "AddToEquipmentSlot")
-	void K2_AddToEquipmentSlot();
+	void K2_AddToEquipmentSlot(UObject* Owner);
 	
 	UFUNCTION(BlueprintPure, Category = "Item")
 	virtual bool CanStackItem(const UEISItemInstance* OtherItem) const;
@@ -173,6 +188,12 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Item")
 	virtual bool IsMatchItem(const UEISItemInstance* OtherItem) const;
 
+	UFUNCTION(BlueprintPure, Category = "Item")
+	int GetItemId() const { return ItemInstanceData.ItemId; }
+	
+	UFUNCTION(BlueprintPure, Category = "Item")
+	UObject* GetOwner() const { return OwnerPrivate; }
+	
 #pragma endregion Item Interface
 
 protected:
@@ -180,6 +201,11 @@ protected:
 	FEISItemInstanceData ItemInstanceData;
 	
 private:
+	void SetOwner(UObject* Owner);
+	
 	UPROPERTY(EditAnywhere, Category = "Item")
 	TObjectPtr<UEISItemDefinition> ItemDefinition;
+
+	UPROPERTY()
+	TObjectPtr<UObject> OwnerPrivate;
 };

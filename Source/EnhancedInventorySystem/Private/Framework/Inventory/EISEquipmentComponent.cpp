@@ -9,6 +9,11 @@ UEISEquipmentComponent::UEISEquipmentComponent(const FObjectInitializer& ObjectI
 	PrimaryComponentTick.bCanEverTick = false;
 }
 
+void UEISEquipmentComponent::AddEquipmentSlot(UEISEquipmentSlot* NewEquipmentSlot)
+{
+	EquipmentSlots.AddUnique(NewEquipmentSlot);
+}
+
 void UEISEquipmentComponent::EquipSlot(const FString& SlotName, UEISItemInstance* ItemInstance)
 {
 	if (HasAuthority())
@@ -40,6 +45,18 @@ UEISEquipmentSlot* UEISEquipmentComponent::FindEquipmentSlotByName(const FString
 		}
 	}
 	return nullptr;
+}
+
+bool UEISEquipmentComponent::CanEquipItemAtSlot(const FString& SlotName, const UEISItemInstance* Item) const
+{
+	if (UEISEquipmentSlot* Slot = FindEquipmentSlotByName(SlotName))
+	{
+		if (Slot->GetItemInstance() != Item)
+		{
+			return Slot->CanEquipItem(Item);
+		}
+	}
+	return false;
 }
 
 void UEISEquipmentComponent::BeginPlay()

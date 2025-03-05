@@ -3,6 +3,11 @@
 #include "EISItemInstance.h"
 #include "Net/UnrealNetwork.h"
 
+UEISItemInstance* UEISItemInstanceComponent::GetOwner() const
+{
+	return GetTypedOuter<UEISItemInstance>();
+}
+
 UEISItemInstance::UEISItemInstance(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
 }
@@ -50,7 +55,10 @@ void UEISItemInstance::SetAmount(int InAmount)
 {
 	int PrevAmount = ItemInstanceData.Amount;
 	int NewAmount = ItemInstanceData.Amount = InAmount;
-	OnAmountChange.Broadcast(NewAmount, PrevAmount);
+	
+	OnAmountChangeDelegate.Broadcast(NewAmount, PrevAmount);
+	OnAmountChange.Broadcast(this, NewAmount, PrevAmount);
+	
 	OnUpdateAmount(NewAmount, PrevAmount);
 	K2_OnUpdateAmount(NewAmount, PrevAmount);
 }
@@ -59,7 +67,10 @@ int UEISItemInstance::AddAmount(int InAmount)
 {
 	int PrevAmount = ItemInstanceData.Amount;
 	int NewAmount = ItemInstanceData.Amount += InAmount;
-	OnAmountChange.Broadcast(NewAmount, PrevAmount);
+	
+	OnAmountChangeDelegate.Broadcast(NewAmount, PrevAmount);
+	OnAmountChange.Broadcast(this, NewAmount, PrevAmount);
+	
 	OnUpdateAmount(NewAmount, PrevAmount);
 	K2_OnUpdateAmount(NewAmount, PrevAmount);
 	return NewAmount;
@@ -69,7 +80,10 @@ int UEISItemInstance::RemoveAmount(int InAmount)
 {
 	int PrevAmount = ItemInstanceData.Amount;
 	int NewAmount = ItemInstanceData.Amount -= InAmount;
-	OnAmountChange.Broadcast(NewAmount, PrevAmount);
+	
+	OnAmountChangeDelegate.Broadcast(NewAmount, PrevAmount);
+	OnAmountChange.Broadcast(this, NewAmount, PrevAmount);
+	
 	OnUpdateAmount(NewAmount, PrevAmount);
 	K2_OnUpdateAmount(NewAmount, PrevAmount);
 	return NewAmount;
@@ -77,6 +91,21 @@ int UEISItemInstance::RemoveAmount(int InAmount)
 
 void UEISItemInstance::OnUpdateAmount(int NewAmount, int PrevAmount)
 {
+}
+
+UEISItemInstanceComponent* UEISItemInstance::GetComponentByClass(TSubclassOf<UEISItemInstanceComponent> ItemComponentClass) const
+{
+	TArray<UEISItemInstanceComponent*> Components = GetDefinition()->Components;
+	for (UEISItemInstanceComponent* Component : Components)
+	{
+		check(Component);
+		
+		if (Component->IsA(ItemComponentClass))
+		{
+			return Component;
+		}
+	}
+	return nullptr;
 }
 
 TArray<UEISItemInstanceComponent*> UEISItemInstance::GetComponents() const
@@ -87,8 +116,11 @@ TArray<UEISItemInstanceComponent*> UEISItemInstance::GetComponents() const
 void UEISItemInstance::Initialize(int InItemId, const UEISItemInstance* SourceItem)
 {
 	ItemInstanceData.ItemId = InItemId;
+	
 	OnInitialize(SourceItem);
 	K2_OnInitialize(SourceItem);
+	
+	OnItemCreateDelegate.Broadcast(this);
 	OnItemCreate.Broadcast(this);
 }
 
@@ -96,24 +128,28 @@ void UEISItemInstance::OnInitialize(const UEISItemInstance* SourceItem)
 {
 }
 
-void UEISItemInstance::AddToContainer()
+void UEISItemInstance::AddToContainer(UObject* Owner)
 {
-	OnAddToContainer();
-	K2_OnAddToContainer();
+	SetOwner(Owner);
+	
+	OnAddToContainer(Owner);
+	K2_OnAddToContainer(Owner);
 }
 
-void UEISItemInstance::OnAddToContainer()
+void UEISItemInstance::OnAddToContainer(UObject* Owner)
 {
 	
 }
 
-void UEISItemInstance::AddToEquipmentSlot()
+void UEISItemInstance::AddToEquipmentSlot(UObject* Owner)
 {
-	OnAddToEquipmentSlot();
-	K2_AddToEquipmentSlot();
+	SetOwner(Owner);
+	
+	OnAddToEquipmentSlot(Owner);
+	K2_AddToEquipmentSlot(Owner);
 }
 
-void UEISItemInstance::OnAddToEquipmentSlot()
+void UEISItemInstance::OnAddToEquipmentSlot(UObject* Owner)
 {
 	
 }
@@ -130,7 +166,7 @@ bool UEISItemInstance::IsMatchItem(const UEISItemInstance* OtherItem) const
 	return GetDefinition() == OtherItem->GetDefinition();
 }
 
-UEISItemInstance* UEISItemInstanceComponent::GetOwner() const
+void UEISItemInstance::SetOwner(UObject* Owner)
 {
-	return GetTypedOuter<UEISItemInstance>();
+	OwnerPrivate = Owner;
 }

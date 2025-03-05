@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "EISItemRepositoryInterface.h"
 #include "GameplayTagContainer.h"
 #include "UObject/Object.h"
 #include "EISEquipmentSlot.generated.h"
@@ -39,13 +40,15 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnEquipmentSlotChangeSignature, con
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnEquipmentSlotAvailabilitySignature, bool, Available);
 
 UCLASS(DisplayName = "Equipment Slot", Abstract, EditInlineNew, DefaultToInstanced)
-class ENHANCEDINVENTORYSYSTEM_API UEISEquipmentSlot : public UObject
+class ENHANCEDINVENTORYSYSTEM_API UEISEquipmentSlot : public UObject, public IEISItemRepositoryInterface
 {
 	GENERATED_BODY()
 	
 	friend UEISInventoryFunctionLibrary;
 	
 public:
+	TMulticastDelegate<void(const FEISEquipmentSlotChangeData&)> OnEquipmentSlotChangeDelegate;
+	
 	UPROPERTY(BlueprintAssignable)
 	FOnEquipmentSlotChangeSignature OnEquipmentSlotChange;
 
@@ -56,6 +59,9 @@ public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual bool ReplicateSubobjects(UActorChannel* Channel, FOutBunch* Bunch, FReplicationFlags* RepFlags);
 
+	UFUNCTION(BlueprintCallable, Category = "Equipment Slot")
+	void SetupEquipmentSlot(FString InSlotName, FGameplayTagContainer InSlotTags);
+	
 	void AddStartingData();
 
 	UFUNCTION(BlueprintPure, Category = "Equipment Slot")
@@ -74,6 +80,8 @@ public:
 	UEISItemInstance* GetItemInstance() const { return ItemInstance; }
 
 protected:
+	virtual void CallRemoveItem(UEISItemInstance* Item) override;
+	
 	UFUNCTION(BlueprintCallable, Category = "Equipment Slot")
 	void EquipSlot(UEISItemInstance* InItemInstance);
 

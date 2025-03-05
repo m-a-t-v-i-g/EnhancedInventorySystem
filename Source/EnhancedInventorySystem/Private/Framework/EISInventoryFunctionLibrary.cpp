@@ -1,10 +1,10 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #include "EISInventoryFunctionLibrary.h"
-
 #include "EISEquipmentSlot.h"
 #include "EISItemInstance.h"
 #include "EISItemContainer.h"
+#include "EISItemRepositoryInterface.h"
 
 int UEISInventoryFunctionLibrary::LastItemId {0};
 
@@ -133,6 +133,31 @@ void UEISInventoryFunctionLibrary::MoveItemFromContainerToContainer(UEISItemCont
 	}
 }
 
+void UEISInventoryFunctionLibrary::MoveItemFromContainerToSlot(UEISItemContainer* SourceContainer,
+                                                               UEISEquipmentSlot* TargetSlot, UEISItemInstance* Item)
+{
+	if (!SourceContainer || !TargetSlot || !Item)
+	{
+		return;
+	}
+
+	if (Item->GetAmount() > 1)
+	{
+		UEISItemInstance* RemainedItem = GenerateItem(SourceContainer->GetWorld(), Item);
+		if (!RemainedItem)
+		{
+			return;
+		}
+
+		RemainedItem->SetAmount(Item->GetAmount() - 1);
+		Container_AddItem(SourceContainer, RemainedItem);
+
+		Item->SetAmount(1);
+	}
+
+	Slot_EquipItem(TargetSlot, Item);
+}
+
 void UEISInventoryFunctionLibrary::MoveItemFromSlotToContainer(UEISEquipmentSlot* SourceSlot,
                                                                UEISItemContainer* TargetContainer)
 {
@@ -141,9 +166,47 @@ void UEISInventoryFunctionLibrary::MoveItemFromSlotToContainer(UEISEquipmentSlot
 		return;
 	}
 
-	if (UEISItemInstance* OldItemInstance = SourceSlot->GetItemInstance())
+	if (UEISItemInstance* SlotItemInstance = SourceSlot->GetItemInstance())
 	{
 		Slot_UnequipItem(SourceSlot);
-		Container_AddItem(TargetContainer, OldItemInstance);
+		Container_AddItem(TargetContainer, SlotItemInstance);
+	}
+}
+
+void UEISInventoryFunctionLibrary::MoveItemFromSlotToSlot(UEISEquipmentSlot* SourceSlot, UEISEquipmentSlot* TargetSlot)
+{
+	if (!SourceSlot || !TargetSlot)
+	{
+		return;
+	}
+	
+	UEISItemInstance* SourceItemInstance = SourceSlot->GetItemInstance();
+	UEISItemInstance* TargetItemInstance = TargetSlot->GetItemInstance();
+	bool bTargetSlotEquipped = TargetSlot->IsEquipped();
+	
+	Slot_UnequipItem(SourceSlot);
+	
+	if (bTargetSlotEquipped)
+	{
+		Slot_UnequipItem(TargetSlot);
+		Slot_EquipItem(SourceSlot, TargetItemInstance);
+	}
+	
+	Slot_EquipItem(TargetSlot, SourceItemInstance);
+}
+
+void UEISInventoryFunctionLibrary::RemoveItemFromSource(UObject* Source, UEISItemInstance* Item)
+{
+	if (auto SourceRep = Cast<IEISItemRepositoryInterface>(Source))
+	{
+		SourceRep->CallRemoveItem(Item);
+	}
+}
+
+void UEISInventoryFunctionLibrary::SubtractOrRemoveItemFromSource(UObject* Source, UEISItemInstance* Item, int Amount)
+{
+	if (auto SourceRep = Cast<IEISItemRepositoryInterface>(Source))
+	{
+		SourceRep->CallSubtractOrRemoveItem(Item, Amount);
 	}
 }

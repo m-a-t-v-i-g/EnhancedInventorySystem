@@ -18,6 +18,9 @@ public:
 	UEISEquipmentComponent(const FObjectInitializer& ObjectInitializer);
 
 	UFUNCTION(BlueprintCallable, Category = "Equipment Component")
+	void AddEquipmentSlot(UEISEquipmentSlot* NewEquipmentSlot);
+	
+	UFUNCTION(BlueprintCallable, Category = "Equipment Component")
 	void EquipSlot(const FString& SlotName, UEISItemInstance* ItemInstance);
 
 	UFUNCTION(BlueprintCallable, Category = "Equipment Component")
@@ -26,6 +29,15 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Equipment Component")
 	UEISEquipmentSlot* FindEquipmentSlotByName(const FString& SlotName) const;
 
+	template <class T>
+	T* FindEquipmentSlotByName(const FString& SlotName) const
+	{
+		return Cast<T>(FindEquipmentSlotByName(SlotName));
+	}
+	
+	UFUNCTION(BlueprintPure, Category = "Equipment Slot")
+	bool CanEquipItemAtSlot(const FString& SlotName, const UEISItemInstance* Item) const;
+	
 	UFUNCTION(BlueprintPure, Category = "Equipment Component")
 	TArray<UEISEquipmentSlot*> GetEquipmentSlots() const { return EquipmentSlots; }
 	

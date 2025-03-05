@@ -97,48 +97,35 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Inventory Manager")
 	void RemoveReplicatedSlot(UEISEquipmentSlot* EquipmentSlot);
 
-protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
-	
-	UFUNCTION(BlueprintCallable, Category = "Inventory Manager|Container")
-	void Container_AddItem(UObject* FromSource, UEISItemContainer* ToContainer, UEISItemInstance* Item);
 
 	UFUNCTION(BlueprintCallable, Category = "Inventory Manager|Container")
-	void Container_RemoveItem(UEISItemContainer* Container, UEISItemInstance* Item);
+	virtual void Container_AddItem(UObject* FromSource, UEISItemContainer* ToContainer, UEISItemInstance* Item);
 
 	UFUNCTION(BlueprintCallable, Category = "Inventory Manager|Container")
-	void Container_StackItem(UObject* FromSource, UEISItemContainer* InContainer, UEISItemInstance* SourceItem, UEISItemInstance* TargetItem);
+	virtual void Container_RemoveItem(UEISItemContainer* Container, UEISItemInstance* Item);
 
 	UFUNCTION(BlueprintCallable, Category = "Inventory Manager|Container")
-	void Container_SplitItem(UEISItemContainer* Container, UEISItemInstance* Item, int Amount);
+	virtual void Container_StackItem(UObject* FromSource, UEISItemContainer* InContainer, UEISItemInstance* SourceItem,
+	                                 UEISItemInstance* TargetItem);
+
+	UFUNCTION(BlueprintCallable, Category = "Inventory Manager|Container")
+	virtual void Container_SplitItem(UEISItemContainer* Container, UEISItemInstance* Item, int Amount);
 
 	UFUNCTION(BlueprintCallable, Category = "Inventory Manager|Slot")
-	void Slot_TryEquipAny(UObject* Source, UEISItemInstance* Item);
+	virtual void EquipSlot(UObject* FromSource, UEISEquipmentSlot* AtEquipmentSlot, UEISItemInstance* Item);
 
 	UFUNCTION(BlueprintCallable, Category = "Inventory Manager|Slot")
-	void EquipSlot(UObject* FromSource, UEISEquipmentSlot* AtEquipmentSlot, UEISItemInstance* Item);
+	virtual void UnequipSlot(UEISEquipmentSlot* EquipmentSlot);
 
-	UFUNCTION(BlueprintCallable, Category = "Inventory Manager|Slot")
-	void UnequipSlot(UEISEquipmentSlot* EquipmentSlot);
-
-	UFUNCTION(BlueprintCallable, Category = "Inventory Manager|Container")
-	void MoveItemFromContainerToContainer(UEISItemContainer* FromContainer, UEISItemContainer* ToContainer,
-	                                      UEISItemInstance* Item);
-
-	UFUNCTION(BlueprintCallable, Category = "Inventory Manager|Slot")
-	void MoveItemFromSlotToContainer(UEISEquipmentSlot* SourceSlot, UEISItemContainer* TargetContainer);
-	
 	UFUNCTION(BlueprintCallable, Category = "Inventory Manager|Container")
 	virtual void RemoveItemFromSource(UObject* Source, UEISItemInstance* Item);
 	
-private:
-	UPROPERTY(EditDefaultsOnly, Category = "Inventory Manager")
-	bool bInitializeOnBeginPlay = false;
+	UFUNCTION(BlueprintCallable, Category = "Inventory Manager|Container")
+	virtual void SubtractOrRemoveItemFromSource(UObject* Source, UEISItemInstance* Item, int Amount);
 	
-	UPROPERTY(Replicated)
-	FEISAppliedItemContainers ReplicatedContainers;
-	
+protected:
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerContainerAddItem(UObject* FromSource, UEISItemContainer* ToContainer, UEISItemInstance* Item);
 
@@ -149,5 +136,18 @@ private:
 	void ServerContainerStackItem(UObject* FromSource, UEISItemContainer* InContainer, UEISItemInstance* SourceItem, UEISItemInstance* TargetItem);
 
 	UFUNCTION(Server, Reliable, WithValidation)
-	void ServerSplitItem(UEISItemContainer* Container, UEISItemInstance* Item, int Amount);
+	void ServerContainerSplitItem(UEISItemContainer* Container, UEISItemInstance* Item, int Amount);
+	
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerSlotEquipItem(UObject* FromSource, UEISEquipmentSlot* AtEquipmentSlot, UEISItemInstance* Item);
+
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerSlotUnequipItem(UEISEquipmentSlot* EquipmentSlot);
+
+private:
+	UPROPERTY(EditDefaultsOnly, Category = "Inventory Manager")
+	bool bInitializeOnBeginPlay = false;
+	
+	UPROPERTY(Replicated)
+	FEISAppliedItemContainers ReplicatedContainers;
 };

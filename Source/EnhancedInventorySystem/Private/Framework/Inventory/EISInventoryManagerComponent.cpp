@@ -165,8 +165,15 @@ void UEISInventoryManagerComponent::Container_AddItem(UObject* FromSource, UEISI
 	
 	if (!HasAuthority() && IsLocalController())
 	{
-		UEISInventoryFunctionLibrary::Container_AddItem(ToContainer, Item);
-		RemoveItemFromSource(FromSource, Item);
+		if (ToContainer->CanAddItem(Item))
+		{
+			UEISInventoryFunctionLibrary::Container_AddItem(ToContainer, Item);
+			RemoveItemFromSource(FromSource, Item);
+		}
+		else
+		{
+			return;
+		}
 	}
 
 	ServerContainerAddItem(FromSource, ToContainer, Item);
@@ -184,7 +191,14 @@ void UEISInventoryManagerComponent::Container_RemoveItem(UEISItemContainer* Cont
 	
 	if (!HasAuthority() && IsLocalController())
 	{
-		UEISInventoryFunctionLibrary::Container_RemoveItem(Container, Item);
+		if (Container->Contains(Item))
+		{
+			UEISInventoryFunctionLibrary::Container_RemoveItem(Container, Item);
+		}
+		else
+		{
+			return;
+		}
 	}
 
 	ServerContainerRemoveItem(Container, Item);
@@ -205,8 +219,15 @@ void UEISInventoryManagerComponent::Container_StackItem(UObject* FromSource, UEI
 	
 	if (!HasAuthority() && IsLocalController())
 	{
-		UEISInventoryFunctionLibrary::Container_StackItem(InContainer, SourceItem, TargetItem);
-		RemoveItemFromSource(FromSource, SourceItem);
+		if (TargetItem->CanStackItem(SourceItem))
+		{
+			UEISInventoryFunctionLibrary::Container_StackItem(InContainer, SourceItem, TargetItem);
+			RemoveItemFromSource(FromSource, SourceItem);
+		}
+		else
+		{
+			return;
+		}
 	}
 
 	ServerContainerStackItem(FromSource, InContainer, SourceItem, TargetItem);
@@ -231,21 +252,13 @@ void UEISInventoryManagerComponent::Container_SplitItem(UEISItemContainer* Conta
 				Item->RemoveAmount(Amount);
 			}
 		}
+		else
+		{
+			return;
+		}
 	}
 
-	ServerSplitItem(Container, Item, Amount);
-}
-
-void UEISInventoryManagerComponent::Slot_TryEquipAny(UObject* Source, UEISItemInstance* Item)
-{
-	check(Item);
-
-	if (!GetController<AController>())
-	{
-		return;
-	}
-
-
+	ServerContainerSplitItem(Container, Item, Amount);
 }
 
 void UEISInventoryManagerComponent::EquipSlot(UObject* FromSource, UEISEquipmentSlot* AtEquipmentSlot,
@@ -259,6 +272,21 @@ void UEISInventoryManagerComponent::EquipSlot(UObject* FromSource, UEISEquipment
 	{
 		return;
 	}
+
+	if (!HasAuthority() && IsLocalController())
+	{
+		if (AtEquipmentSlot->CanEquipItem(Item))
+		{
+			UEISInventoryFunctionLibrary::Slot_EquipItem(AtEquipmentSlot, Item);
+			RemoveItemFromSource(FromSource, Item);
+		}
+		else
+		{
+			return;
+		}
+	}
+
+	ServerSlotEquipItem(FromSource, AtEquipmentSlot, Item);
 }
 
 void UEISInventoryManagerComponent::UnequipSlot(UEISEquipmentSlot* EquipmentSlot)
@@ -269,60 +297,30 @@ void UEISInventoryManagerComponent::UnequipSlot(UEISEquipmentSlot* EquipmentSlot
 	{
 		return;
 	}
-}
-
-void UEISInventoryManagerComponent::MoveItemFromContainerToContainer(UEISItemContainer* FromContainer,
-                                                                     UEISItemContainer* ToContainer,
-                                                                     UEISItemInstance* Item)
-{
-	check(FromContainer);
-	check(ToContainer);
-	check(Item);
-
-	if (!GetController<AController>())
-	{
-		return;
-	}
 
 	if (!HasAuthority() && IsLocalController())
 	{
-		UEISInventoryFunctionLibrary::MoveItemFromContainerToContainer(FromContainer, ToContainer, Item);
+		if (EquipmentSlot->IsEquipped())
+		{
+			UEISInventoryFunctionLibrary::Slot_UnequipItem(EquipmentSlot);
+		}
+		else
+		{
+			return;
+		}
 	}
 
-	// TODO
-}
-
-void UEISInventoryManagerComponent::MoveItemFromSlotToContainer(UEISEquipmentSlot* SourceSlot,
-                                                                UEISItemContainer* TargetContainer)
-{
-	check(SourceSlot);
-	check(SourceSlot);
-
-	if (!GetController<AController>())
-	{
-		return;
-	}
+	ServerSlotUnequipItem(EquipmentSlot);
 }
 
 void UEISInventoryManagerComponent::RemoveItemFromSource(UObject* Source, UEISItemInstance* Item)
 {
-	if (auto SourceContainer = Cast<UEISItemContainer>(Source))
-	{
-		if (SourceContainer->Contains(Item))
-		{
-			UEISInventoryFunctionLibrary::Container_RemoveItem(SourceContainer, Item);
-		}
-		return;
-	}
+	UEISInventoryFunctionLibrary::RemoveItemFromSource(Source, Item);
+}
 
-	if (auto SourceSlot = Cast<UEISEquipmentSlot>(Source))
-	{
-		if (SourceSlot->IsEquipped())
-		{
-			UEISInventoryFunctionLibrary::Slot_UnequipItem(SourceSlot);
-		}
-		return;
-	}
+void UEISInventoryManagerComponent::SubtractOrRemoveItemFromSource(UObject* Source, UEISItemInstance* Item, int Amount)
+{
+	UEISInventoryFunctionLibrary::SubtractOrRemoveItemFromSource(Source, Item, Amount);
 }
 
 void UEISInventoryManagerComponent::ServerContainerAddItem_Implementation(UObject* FromSource, UEISItemContainer* ToContainer, UEISItemInstance* Item)
@@ -360,12 +358,37 @@ bool UEISInventoryManagerComponent::ServerContainerStackItem_Validate(UObject* F
 	return IsValid(FromSource) && IsValid(InContainer) && IsValid(SourceItem) && IsValid(TargetItem);
 }
 
-void UEISInventoryManagerComponent::ServerSplitItem_Implementation(UEISItemContainer* Container, UEISItemInstance* Item, int Amount)
+void UEISInventoryManagerComponent::ServerContainerSplitItem_Implementation(UEISItemContainer* Container, UEISItemInstance* Item, int Amount)
 {
 	UEISInventoryFunctionLibrary::Container_SplitItem(Container, Item, Amount);
 }
 
-bool UEISInventoryManagerComponent::ServerSplitItem_Validate(UEISItemContainer* Container, UEISItemInstance* Item, int Amount)
+bool UEISInventoryManagerComponent::ServerContainerSplitItem_Validate(UEISItemContainer* Container, UEISItemInstance* Item, int Amount)
 {
 	return IsValid(Container) && IsValid(Item) && Amount > 0;
+}
+
+void UEISInventoryManagerComponent::ServerSlotEquipItem_Implementation(UObject* FromSource,
+                                                                       UEISEquipmentSlot* AtEquipmentSlot,
+                                                                       UEISItemInstance* Item)
+{
+	UEISInventoryFunctionLibrary::Slot_EquipItem(AtEquipmentSlot, Item);
+	RemoveItemFromSource(FromSource, Item);
+}
+
+bool UEISInventoryManagerComponent::ServerSlotEquipItem_Validate(UObject* FromSource,
+                                                                 UEISEquipmentSlot* AtEquipmentSlot,
+                                                                 UEISItemInstance* Item)
+{
+	return IsValid(FromSource) && IsValid(AtEquipmentSlot) && IsValid(Item);
+}
+
+void UEISInventoryManagerComponent::ServerSlotUnequipItem_Implementation(UEISEquipmentSlot* EquipmentSlot)
+{
+	UEISInventoryFunctionLibrary::Slot_UnequipItem(EquipmentSlot);
+}
+
+bool UEISInventoryManagerComponent::ServerSlotUnequipItem_Validate(UEISEquipmentSlot* EquipmentSlot)
+{
+	return IsValid(EquipmentSlot);
 }

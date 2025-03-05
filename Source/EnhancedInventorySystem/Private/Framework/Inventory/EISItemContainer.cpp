@@ -25,28 +25,29 @@ bool UEISItemContainer::ReplicateSubobjects(UActorChannel* Channel, FOutBunch* B
 	return bReplicateSomething;
 }
 
+void UEISItemContainer::SetupItemContainer(FGameplayTagContainer ContainerTags)
+{
+	CategoryTags = ContainerTags;
+}
+
 void UEISItemContainer::AddStartingData()
 {
-	for (UEISItemInstance* Item : StartingData)
+	for (UClass* RawClass : StartingData)
 	{
-		if (!IsValid(Item))
+		if (!IsValid(RawClass))
 		{
 			continue;
 		}
 
-		const UEISItemInstance* ItemCDO = Item->GetClass()->GetDefaultObject<UEISItemInstance>();
+		const UEISItemInstance* ItemCDO = RawClass->GetDefaultObject<UEISItemInstance>();
 		check(ItemCDO);
 
-		if (Item->GetDefinition() == ItemCDO->GetDefinition())
+		if (CanAddItem(ItemCDO))
 		{
-			if (CanAddItem(Item))
-			{
-				AddItem(Item);
-			}
-		}
-		else
-		{
-			// Log
+			UEISItemInstance* Item = UEISInventoryFunctionLibrary::GenerateItem(GetWorld(), ItemCDO);
+			check(Item);
+
+			AddItem(Item);
 		}
 	}
 	
@@ -115,6 +116,23 @@ UEISItemInstance* UEISItemContainer::FindItemByName(const FName& ScriptName) con
 	return nullptr;
 }
 
+UEISItemInstance* UEISItemContainer::FindItemById(int ItemId) const
+{
+	for (UEISItemInstance* Item : Items)
+	{
+		if (Item->GetItemId() == ItemId)
+		{
+			return Item;
+		}
+	}
+	return nullptr;
+}
+
+void UEISItemContainer::CallRemoveItem(UEISItemInstance* Item)
+{
+	RemoveItem(Item);
+}
+
 bool UEISItemContainer::FindAvailablePlace(UEISItemInstance* Item)
 {
 	if (Item)
@@ -139,7 +157,8 @@ void UEISItemContainer::AddItem(UEISItemInstance* Item)
 	if (Item && CanAddItem(Item))
 	{
 		Items.Add(Item);
-		Item->OnAddToContainer();
+		Item->AddToContainer(this);
+		OnContainerChangeDelegate.Broadcast(FEISItemContainerChangeData(TArray{Item}, {}));
 		OnContainerChange.Broadcast(FEISItemContainerChangeData(TArray{Item}, {}));
 	}
 }
@@ -149,6 +168,7 @@ void UEISItemContainer::RemoveItem(UEISItemInstance* Item)
 	if (Item && Items.Contains(Item))
 	{
 		Items.Remove(Item);
+		OnContainerChangeDelegate.Broadcast(FEISItemContainerChangeData({}, TArray{Item}));
 		OnContainerChange.Broadcast(FEISItemContainerChangeData({}, TArray{Item}));
 	}
 }
@@ -199,7 +219,7 @@ void UEISItemContainer::OnRep_Items(TArray<UEISItemInstance*> PrevContainer)
 
 		if (Item)
 		{
-			Item->AddToContainer();
+			Item->AddToContainer(this);
 		}
 
 		AddedItems.AddUnique(Item);

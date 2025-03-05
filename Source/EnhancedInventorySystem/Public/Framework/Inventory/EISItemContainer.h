@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "EISItemInstance.h"
+#include "EISItemRepositoryInterface.h"
 #include "GameplayTagContainer.h"
 #include "UObject/Object.h"
 #include "EISItemContainer.generated.h"
@@ -37,19 +38,24 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnContainerChangeSignature, const F
                                             ContainerChangeData);
 
 UCLASS(DisplayName = "Item Container", Abstract, EditInlineNew, DefaultToInstanced)
-class ENHANCEDINVENTORYSYSTEM_API UEISItemContainer : public UObject
+class ENHANCEDINVENTORYSYSTEM_API UEISItemContainer : public UObject, public IEISItemRepositoryInterface
 {
 	GENERATED_BODY()
 
 	friend UEISInventoryFunctionLibrary;
 	
 public:
+	TMulticastDelegate<void(const FEISItemContainerChangeData&)> OnContainerChangeDelegate;
+	
 	UPROPERTY(BlueprintAssignable)
 	FOnContainerChangeSignature OnContainerChange;
 	
 	virtual bool IsSupportedForNetworking() const override { return true; }
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual bool ReplicateSubobjects(UActorChannel* Channel, FOutBunch* Bunch, FReplicationFlags* RepFlags);
+	
+	UFUNCTION(BlueprintCallable, Category = "Item Container")
+	void SetupItemContainer(FGameplayTagContainer ContainerTags);
 	
 	void AddStartingData();
 
@@ -69,9 +75,14 @@ public:
 	UEISItemInstance* FindItemByName(const FName& ScriptName) const;
 
 	UFUNCTION(BlueprintPure, Category = "Item Container")
+	UEISItemInstance* FindItemById(int ItemId) const;
+
+	UFUNCTION(BlueprintPure, Category = "Item Container")
 	TArray<UEISItemInstance*> GetItems() const { return Items; }
 
 protected:
+	virtual void CallRemoveItem(UEISItemInstance* Item) override;
+	
 	UFUNCTION(BlueprintCallable, Category = "Item Container")
 	bool FindAvailablePlace(UEISItemInstance* Item);
 	
@@ -92,7 +103,7 @@ private:
 	FGameplayTagContainer CategoryTags;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Item Container")
-	TArray<UEISItemInstance*> StartingData;
+	TArray<TSubclassOf<UEISItemInstance>> StartingData;
 
 	UPROPERTY(EditInstanceOnly, ReplicatedUsing = "OnRep_Items", Category = "Item Container")
 	TArray<UEISItemInstance*> Items;

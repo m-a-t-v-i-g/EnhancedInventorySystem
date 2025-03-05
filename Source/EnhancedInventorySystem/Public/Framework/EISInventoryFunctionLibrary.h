@@ -45,9 +45,22 @@ public:
 	                                             UEISItemContainer* TargetContainer, UEISItemInstance* Item,
 	                                             bool bFullStack = false);
 
+	UFUNCTION(BlueprintCallable, Category = "Inventory Function Library|Container")
+	static void MoveItemFromContainerToSlot(UEISItemContainer* SourceContainer,
+	                                        UEISEquipmentSlot* TargetSlot, UEISItemInstance* Item);
+
 	UFUNCTION(BlueprintCallable, Category = "Inventory Function Library|Slot")
 	static void MoveItemFromSlotToContainer(UEISEquipmentSlot* SourceSlot, UEISItemContainer* TargetContainer);
 
+	UFUNCTION(BlueprintCallable, Category = "Inventory Function Library|Slot")
+	static void MoveItemFromSlotToSlot(UEISEquipmentSlot* SourceSlot, UEISEquipmentSlot* TargetSlot);
+
+	UFUNCTION(BlueprintCallable, Category = "Inventory Manager")
+	static void RemoveItemFromSource(UObject* Source, UEISItemInstance* Item);
+	
+	UFUNCTION(BlueprintCallable, Category = "Inventory Manager")
+	static void SubtractOrRemoveItemFromSource(UObject* Source, UEISItemInstance* Item, int Amount);
+	
 private:
 	static int LastItemId;
 };
