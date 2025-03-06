@@ -18,7 +18,7 @@ bool UEISEquipmentSlot::ReplicateSubobjects(UActorChannel* Channel, FOutBunch* B
 	bool bReplicateSomething = false;
 	if (ItemInstance)
 	{
-		bReplicateSomething |= Channel->ReplicateSubobject(ItemInstance, *Bunch, *RepFlags);
+		bReplicateSomething |= Channel->ReplicateSubobject(ItemInstance.Get(), *Bunch, *RepFlags);
 		bReplicateSomething |= ItemInstance->ReplicateSubobjects(Channel, Bunch, RepFlags);
 	}
 	
@@ -94,7 +94,7 @@ void UEISEquipmentSlot::UnequipSlot()
 
 	UEISItemInstance* PrevObject = ItemInstance;
 	ItemInstance = nullptr;
-	OnEquipmentSlotChangeDelegate.Broadcast(FEISEquipmentSlotChangeData(SlotName, ItemInstance.Get(), IsEquipped()));
+	OnEquipmentSlotChangeDelegate.Broadcast(FEISEquipmentSlotChangeData(SlotName, PrevObject, IsEquipped()));
 	OnEquipmentSlotChange.Broadcast(FEISEquipmentSlotChangeData(SlotName, PrevObject, IsEquipped()));
 }
 
@@ -108,12 +108,12 @@ void UEISEquipmentSlot::OnRep_ItemInstance(UEISItemInstance* PrevItem)
 {
 	if (UEISItemInstance* ItemInst = IsEquipped() ? ItemInstance.Get() : PrevItem)
 	{
-		if (ItemInstance)
+		if (IsValid(ItemInstance.Get()))
 		{
 			ItemInstance->AddToEquipmentSlot(this);
 		}
 
-		OnEquipmentSlotChangeDelegate.Broadcast(FEISEquipmentSlotChangeData(SlotName, ItemInstance.Get(), IsEquipped()));
+		OnEquipmentSlotChangeDelegate.Broadcast(FEISEquipmentSlotChangeData(SlotName, ItemInst, IsEquipped()));
 		OnEquipmentSlotChange.Broadcast(FEISEquipmentSlotChangeData(SlotName, ItemInst, IsEquipped()));
 	}
 }

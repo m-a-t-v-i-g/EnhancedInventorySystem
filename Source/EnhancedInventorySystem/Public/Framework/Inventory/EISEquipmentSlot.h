@@ -77,7 +77,7 @@ public:
 	const FString& GetSlotName() const { return SlotName; }
 
 	UFUNCTION(BlueprintPure, Category = "Equipment Slot")
-	UEISItemInstance* GetItemInstance() const { return ItemInstance; }
+	UEISItemInstance* GetItemInstance() const { return ItemInstance.Get(); }
 
 protected:
 	virtual void CallLeaveItem(UEISItemInstance* Item) override;

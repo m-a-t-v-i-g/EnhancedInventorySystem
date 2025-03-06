@@ -16,6 +16,15 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FItemIntValueChangeSignature, UEI
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FItemFloatValueChangeSignature, UEISItemInstance*, Item, float,
                                                NewAmount, float, PrevAmount);
 
+UENUM()
+enum class EEISItemAttributeModifierType : uint8
+{
+	Add,
+	Subtract,
+	Multiply,
+	Divide
+};
+
 USTRUCT(DisplayName = "Item Instance Data", BlueprintType, Blueprintable)
 struct FEISItemInstanceData
 {
@@ -26,6 +35,241 @@ struct FEISItemInstanceData
 	
 	UPROPERTY(VisibleInstanceOnly, Category = "Item", meta = (ClampMin = "1"))
 	int Amount = 1;
+};
+
+USTRUCT()
+struct FEISItemAttributeEntry
+{
+	GENERATED_USTRUCT_BODY()
+	
+	UPROPERTY(EditDefaultsOnly, Category = "Item Attribute")
+	float DefaultValue = 0.0f;
+	
+	UPROPERTY(EditDefaultsOnly, Category = "Item Attribute")
+	float MinValue = 0.0f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Item Attribute")
+	float MaxValue = 0.0f;
+};
+
+USTRUCT(DisplayName = "Item Attribute Data", BlueprintType, Blueprintable)
+struct FEISItemAttributeData
+{
+	GENERATED_USTRUCT_BODY()
+
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly)
+	FGameplayTag AttributeTag;
+	
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly)
+	float Value = 0.0f;
+
+	FEISItemAttributeData()
+	{
+	}
+
+	FEISItemAttributeData(const FGameplayTag& AttrTag, float DefVal, float MinVal, float MaxVal) : AttributeTag(AttrTag),
+		Value(DefVal), DefaultValue(DefVal), MinValue(MinVal), MaxValue(MaxVal)
+	{
+	}
+
+	float GetDefaultValue() const
+	{
+		return DefaultValue;
+	}
+
+	float GetMinValue() const
+	{
+		return MinValue;
+	}
+	
+	float GetMaxValue() const
+	{
+		return MaxValue;
+	}
+	
+	bool IsValid() const
+	{
+		return AttributeTag.IsValid();
+	}
+
+	bool operator==(const FEISItemAttributeData& OtherAttr) const
+	{
+		return AttributeTag == OtherAttr.AttributeTag;
+	}
+
+private:
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	float DefaultValue = 0.0f;
+	
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	float MinValue = 0.0f;
+
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	float MaxValue = 0.0f;
+};
+
+USTRUCT(DisplayName = "Item Attribute Modifier", BlueprintType, Blueprintable)
+struct FEISItemAttributeModifier
+{
+	GENERATED_USTRUCT_BODY()
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FGameplayTag AttributeTag;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	EEISItemAttributeModifierType ModType = EEISItemAttributeModifierType::Add;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float Value = 0.0f;
+
+	void Apply()
+	{
+		bApplied = true;
+	}
+
+	void Unapply()
+	{
+		bApplied = false;
+	}
+
+	bool IsValid() const
+	{
+		return AttributeTag.IsValid();
+	}
+
+	bool Applied() const
+	{
+		return bApplied;
+	}
+	
+private:
+	UPROPERTY(VisibleInstanceOnly)
+	bool bApplied = false;
+};
+
+USTRUCT(DisplayName = "Item Attribute Modifier Handle", BlueprintType, Blueprintable)
+struct FEISItemAttributeModifierHandle
+{
+	GENERATED_USTRUCT_BODY()
+
+	FEISItemAttributeModifierHandle()
+	{
+		Handle = -1;
+	}
+
+	FEISItemAttributeModifierHandle(const FEISItemAttributeModifier& NewAttributeModifier) : ModifierData(
+		NewAttributeModifier)
+	{
+		LastHandle++;
+		Handle = LastHandle;
+	}
+
+	void Apply()
+	{
+		ModifierData.Apply();
+	}
+
+	void Unapply()
+	{
+		ModifierData.Unapply();
+	}
+				
+	void ToggleApply(bool bValue)
+	{
+		bValue ? ModifierData.Apply() : ModifierData.Unapply();
+	}
+
+	int GetHandle() const
+	{
+		return Handle;
+	}
+	
+	const FGameplayTag& GetTag() const
+	{
+		return ModifierData.AttributeTag;
+	}
+	
+	EEISItemAttributeModifierType GetModType() const
+	{
+		return ModifierData.ModType;
+	}
+	
+	float GetValue() const
+	{
+		return ModifierData.Value;
+	}
+	
+	bool IsValid() const
+	{
+		return Handle >= 0;
+	}
+
+	bool IsApplied() const
+	{
+		return ModifierData.Applied();
+	}
+
+private:
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	int Handle = -1;
+
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	FEISItemAttributeModifier ModifierData;
+
+	static int LastHandle;
+};
+
+UCLASS(DisplayName = "Item Attribute Asset")
+class ENHANCEDINVENTORYSYSTEM_API UEISItemAttributeAsset : public UPrimaryDataAsset
+{
+	GENERATED_BODY()
+
+public:
+	UPROPERTY(EditAnywhere, Category = "Attribute Asset")
+	TMap<FGameplayTag, FEISItemAttributeEntry> Attributes;
+};
+
+UCLASS()
+class ENHANCEDINVENTORYSYSTEM_API UEISItemAttributeContainer : public UObject
+{
+	GENERATED_BODY()
+
+public:
+	UEISItemAttributeContainer(const FObjectInitializer& ObjectInitializer);
+
+#pragma region Replication
+	
+	virtual bool IsSupportedForNetworking() const override { return true; }
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+#pragma endregion Replication
+
+	void Initialize();
+
+	FEISItemAttributeModifierHandle ApplyAttributeModifier(const FEISItemAttributeModifier& ModifyData);
+	bool RemoveAttributeModifier(const FEISItemAttributeModifierHandle& ModHandle);
+	bool ToggleAttributeModifier(const FEISItemAttributeModifierHandle& ModHandle, bool bValue);
+	void CalculateAttributes();
+
+	FEISItemAttributeData GetAttributeData(FGameplayTag AttributeTag) const;
+	
+	UFUNCTION(BlueprintPure, Category = "Attribute Container")
+	UEISItemInstance* GetItemInstance() const;
+	
+	template <class T>
+	T* GetItemInstance() const
+	{
+		return Cast<T>(GetItemInstance());
+	}
+
+private:
+	friend UEISItemInstance;
+	
+	UPROPERTY(EditInstanceOnly, Replicated, Category = "Attribute Container")
+	TArray<FEISItemAttributeData> Attributes;
+
+	UPROPERTY(EditInstanceOnly, Replicated, Category = "Attribute Container")
+	TArray<FEISItemAttributeModifierHandle> Modifiers;
 };
 
 UCLASS(DisplayName = "Item Definition")
@@ -43,6 +287,15 @@ public:
 	UPROPERTY(EditAnywhere, Instanced, Category = "Components")
 	TArray<UEISItemInstanceComponent*> Components;
 	
+	UPROPERTY(EditAnywhere, Category = "Attributes")
+	TArray<TObjectPtr<const UEISItemAttributeAsset>> AttributeSets;
+	
+	UPROPERTY(EditAnywhere, Category = "Attributes")
+	bool bUseAdditiveAttributes = false;
+	
+	UPROPERTY(EditAnywhere, Category = "Attributes", meta = (EditCondition = "bUseAdditiveAttributes"))
+	TMap<FGameplayTag, FEISItemAttributeEntry> AdditiveAttributes;
+	
 	UPROPERTY(EditAnywhere, Category = "Properties|Stacking")
 	bool bStackable = false;
 	
@@ -57,7 +310,8 @@ public:
 	int StackMaximum = 1;
 };
 
-UCLASS(Abstract, BlueprintType, Blueprintable, EditInlineNew, DefaultToInstanced, Within = "EISItemDefinition")
+UCLASS(DisplayName = "Item Instance Component", Abstract, BlueprintType, Blueprintable, EditInlineNew,
+	DefaultToInstanced, Within = "EISItemDefinition")
 class ENHANCEDINVENTORYSYSTEM_API UEISItemInstanceComponent : public UObject
 {
 	GENERATED_BODY()
@@ -67,9 +321,9 @@ public:
 	UEISItemInstance* GetOwner() const;
 	
 	template <class T>
-	const T* GetOwner() const
+	T* GetOwner() const
 	{
-		return Cast<const T>(GetOwner());
+		return Cast<T>(GetOwner());
 	}
 };
 
@@ -81,6 +335,8 @@ class ENHANCEDINVENTORYSYSTEM_API UEISItemInstance : public UObject
 public:
 	UEISItemInstance(const FObjectInitializer& ObjectInitializer);
 
+#pragma region Delegates
+	
 	TMulticastDelegate<void(UEISItemInstance*)> OnItemCreateDelegate;
 	
 	UPROPERTY(BlueprintAssignable)
@@ -91,6 +347,8 @@ public:
 	UPROPERTY(BlueprintAssignable)
 	FItemIntValueChangeSignature OnAmountChange;
 	
+#pragma endregion Delegates
+
 #pragma region Replication
 	
 	virtual bool IsSupportedForNetworking() const override { return true; }
@@ -161,6 +419,22 @@ public:
 	
 #pragma endregion Components
 
+#pragma region Attributes
+
+	UFUNCTION(BlueprintCallable, Category = "Item|Attributes")
+	FEISItemAttributeModifierHandle AddAttributeModifier(const FEISItemAttributeModifier& ModifyData);
+
+	UFUNCTION(BlueprintCallable, Category = "Item|Attributes")
+	bool RemoveAttributeModifier(const FEISItemAttributeModifierHandle& ModifyHandle);
+
+	UFUNCTION(BlueprintCallable, Category = "Item|Attributes")
+	bool ToggleAttributeModifier(const FEISItemAttributeModifierHandle& ModifyHandle, bool bValue);
+
+	UFUNCTION(BlueprintPure, Category = "Item|Attributes")
+	FEISItemAttributeData GetAttributeData(FGameplayTag AttributeTag) const;
+	
+#pragma endregion Attributes
+
 #pragma region Item Interface
 
 	void Initialize(int InItemId, const UEISItemInstance* SourceItem);
@@ -199,12 +473,15 @@ public:
 protected:
 	UPROPERTY(EditInstanceOnly, Replicated, Category = "Item")
 	FEISItemInstanceData ItemInstanceData;
-	
+
 private:
 	void SetOwner(UObject* Owner);
 	
 	UPROPERTY(EditAnywhere, Category = "Item")
 	TObjectPtr<UEISItemDefinition> ItemDefinition;
+
+	UPROPERTY(EditInstanceOnly, Replicated, Category = "Item")
+	TObjectPtr<UEISItemAttributeContainer> AttributeContainer;
 
 	UPROPERTY()
 	TObjectPtr<UObject> OwnerPrivate;

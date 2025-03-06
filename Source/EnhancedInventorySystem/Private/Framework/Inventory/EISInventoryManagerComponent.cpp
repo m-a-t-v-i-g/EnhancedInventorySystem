@@ -65,6 +65,7 @@ bool UEISInventoryManagerComponent::ReplicateSubobjects(UActorChannel* Channel, 
 		if (IsValid(Instance))
 		{
 			WroteSomething |= Channel->ReplicateSubobject(Instance, *Bunch, *RepFlags);
+			WroteSomething |= Instance->ReplicateSubobjects(Channel, Bunch, RepFlags);
 		}
 	}
 

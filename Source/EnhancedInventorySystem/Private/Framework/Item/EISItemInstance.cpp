@@ -1,7 +1,161 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #include "EISItemInstance.h"
+#include "Engine/ActorChannel.h"
 #include "Net/UnrealNetwork.h"
+
+int FEISItemAttributeModifierHandle::LastHandle {-1};
+
+UEISItemAttributeContainer::UEISItemAttributeContainer(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
+{
+}
+
+void UEISItemAttributeContainer::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	UObject::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ThisClass, Attributes);
+	DOREPLIFETIME(ThisClass, Modifiers);
+}
+
+void UEISItemAttributeContainer::Initialize()
+{
+	UEISItemInstance* ItemInstance = GetItemInstance();
+	check(ItemInstance);
+
+	const UEISItemDefinition* ItemDef = GetItemInstance()->GetDefinition();
+	check(ItemDef);
+
+	for (auto AttributeSet : ItemDef->AttributeSets)
+	{
+		for (auto Attribute : AttributeSet->Attributes)
+		{
+			const FGameplayTag& Tag = Attribute.Key;
+			const FEISItemAttributeEntry& Value = Attribute.Value;
+			Attributes.AddUnique(FEISItemAttributeData(Tag, Value.DefaultValue, Value.MinValue, Value.MaxValue));
+		}
+	}
+
+	if (ItemDef->bUseAdditiveAttributes)
+	{
+		for (auto Attribute : ItemDef->AdditiveAttributes)
+		{
+			const FGameplayTag& Tag = Attribute.Key;
+			const FEISItemAttributeEntry& Value = Attribute.Value;
+			Attributes.AddUnique(FEISItemAttributeData(Tag, Value.DefaultValue, Value.MinValue, Value.MaxValue));
+		}
+	}
+}
+
+FEISItemAttributeModifierHandle UEISItemAttributeContainer::ApplyAttributeModifier(
+	const FEISItemAttributeModifier& ModifyData)
+{
+	for (const FEISItemAttributeData& Attribute : Attributes)
+	{
+		if (Attribute.AttributeTag == ModifyData.AttributeTag)
+		{
+			FEISItemAttributeModifierHandle ModHandle = FEISItemAttributeModifierHandle(ModifyData);
+			if (ModHandle.IsValid())
+			{
+				ModHandle.Apply();
+				Modifiers.Add(ModHandle);
+				CalculateAttributes();
+				return ModHandle;
+			}
+		}
+	}
+	return FEISItemAttributeModifierHandle();
+}
+
+bool UEISItemAttributeContainer::RemoveAttributeModifier(const FEISItemAttributeModifierHandle& ModHandle)
+{
+	for (uint8 i = 0; i < Modifiers.Num(); i++)
+	{
+		if (Modifiers[i].GetHandle() == ModHandle.GetHandle())
+		{
+			Modifiers.RemoveAt(i);
+			CalculateAttributes();
+			return true;
+		}
+	}
+	return false;
+}
+
+bool UEISItemAttributeContainer::ToggleAttributeModifier(const FEISItemAttributeModifierHandle& ModHandle, bool bValue)
+{
+	for (uint8 i = 0; i < Modifiers.Num(); i++)
+	{
+		if (Modifiers[i].GetHandle() == ModHandle.GetHandle())
+		{
+			Modifiers[i].ToggleApply(bValue);
+			CalculateAttributes();
+			return true;
+		}
+	}
+	return false;
+}
+
+void UEISItemAttributeContainer::CalculateAttributes()
+{
+	for (FEISItemAttributeData& Attribute : Attributes)
+	{
+		Attribute.Value = Attribute.GetDefaultValue();
+		
+		for (const FEISItemAttributeModifierHandle& ModHandle : Modifiers)
+		{
+			if (!ModHandle.IsValid() || !ModHandle.IsApplied() || Attribute.AttributeTag != ModHandle.GetTag())
+			{
+				continue;
+			}
+
+			switch (ModHandle.GetModType())
+			{
+			case EEISItemAttributeModifierType::Add:
+				{
+					float CalcValue = Attribute.Value + ModHandle.GetValue();
+					Attribute.Value = FMath::Clamp(CalcValue, Attribute.GetMinValue(), Attribute.GetMaxValue());
+					break;
+				}
+			case EEISItemAttributeModifierType::Subtract:
+				{
+					float CalcValue = Attribute.Value - ModHandle.GetValue();
+					Attribute.Value = FMath::Clamp(CalcValue, Attribute.GetMinValue(), Attribute.GetMaxValue());
+					break;
+				}
+			case EEISItemAttributeModifierType::Multiply:
+				{
+					float CalcValue = Attribute.Value * ModHandle.GetValue();
+					Attribute.Value = FMath::Clamp(CalcValue, Attribute.GetMinValue(), Attribute.GetMaxValue());
+					break;
+				}
+			case EEISItemAttributeModifierType::Divide:
+				{
+					float CalcValue = Attribute.Value / ModHandle.GetValue();
+					Attribute.Value = FMath::Clamp(CalcValue, Attribute.GetMinValue(), Attribute.GetMaxValue());
+					break;
+				}
+			default: break;
+			}
+		}
+	}
+}
+
+FEISItemAttributeData UEISItemAttributeContainer::GetAttributeData(FGameplayTag AttributeTag) const
+{
+	for (const FEISItemAttributeData& Attribute : Attributes)
+	{
+		if (Attribute.AttributeTag == AttributeTag)
+		{
+			return Attribute;
+		}
+	}
+	return FEISItemAttributeData();
+}
+
+UEISItemInstance* UEISItemAttributeContainer::GetItemInstance() const
+{
+	return GetTypedOuter<UEISItemInstance>();
+}
 
 UEISItemInstance* UEISItemInstanceComponent::GetOwner() const
 {
@@ -10,18 +164,25 @@ UEISItemInstance* UEISItemInstanceComponent::GetOwner() const
 
 UEISItemInstance::UEISItemInstance(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
+	AttributeContainer = CreateDefaultSubobject<UEISItemAttributeContainer>("Attribute Container");
 }
 
 void UEISItemInstance::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	UObject::GetLifetimeReplicatedProps(OutLifetimeProps);
 
+	DOREPLIFETIME(ThisClass, AttributeContainer);
 	DOREPLIFETIME(ThisClass, ItemInstanceData);
 }
 
 bool UEISItemInstance::ReplicateSubobjects(UActorChannel* Channel, FOutBunch* Bunch, FReplicationFlags* RepFlags)
 {
 	bool bReplicateSomething = false;
+	if (AttributeContainer)
+	{
+		bReplicateSomething |= Channel->ReplicateSubobject(AttributeContainer.Get(), *Bunch, *RepFlags);
+	}
+	
 	return bReplicateSomething;
 }
 
@@ -43,7 +204,7 @@ const FGameplayTagContainer& UEISItemInstance::GetTags() const
 bool UEISItemInstance::IsStackable() const
 {
 	return (ItemDefinition->bStackable && (ItemDefinition->bHasStackMaximum && ItemDefinition->StackMaximum > ItemInstanceData.
-		Amount)) || ItemDefinition->bStackable;
+		Amount)) || (ItemDefinition->bStackable && !ItemDefinition->bHasStackMaximum);
 }
 
 int UEISItemInstance::GetStackAmount() const
@@ -113,9 +274,50 @@ TArray<UEISItemInstanceComponent*> UEISItemInstance::GetComponents() const
 	return GetDefinition()->Components;
 }
 
+FEISItemAttributeModifierHandle UEISItemInstance::AddAttributeModifier(const FEISItemAttributeModifier& ModifyData)
+{
+	if (AttributeContainer)
+	{
+		return AttributeContainer->ApplyAttributeModifier(ModifyData);
+	}
+	return FEISItemAttributeModifierHandle();
+}
+
+bool UEISItemInstance::RemoveAttributeModifier(const FEISItemAttributeModifierHandle& ModifyHandle)
+{
+	if (AttributeContainer)
+	{
+		return AttributeContainer->RemoveAttributeModifier(ModifyHandle);
+	}
+	return false;
+}
+
+bool UEISItemInstance::ToggleAttributeModifier(const FEISItemAttributeModifierHandle& ModifyHandle, bool bValue)
+{
+	if (AttributeContainer)
+	{
+		return AttributeContainer->ToggleAttributeModifier(ModifyHandle, bValue);
+	}
+	return false;
+}
+
+FEISItemAttributeData UEISItemInstance::GetAttributeData(FGameplayTag AttributeTag) const
+{
+	if (AttributeContainer)
+	{
+		return AttributeContainer->GetAttributeData(AttributeTag);
+	}
+	return FEISItemAttributeData();
+}
+
 void UEISItemInstance::Initialize(int InItemId, const UEISItemInstance* SourceItem)
 {
 	ItemInstanceData.ItemId = InItemId;
+
+	if (AttributeContainer)
+	{
+		AttributeContainer->Initialize();
+	}
 	
 	OnInitialize(SourceItem);
 	K2_OnInitialize(SourceItem);
