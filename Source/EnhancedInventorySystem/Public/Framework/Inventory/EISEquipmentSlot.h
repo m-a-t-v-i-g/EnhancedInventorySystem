@@ -80,7 +80,9 @@ public:
 	UEISItemInstance* GetItemInstance() const { return ItemInstance; }
 
 protected:
+	virtual void CallLeaveItem(UEISItemInstance* Item) override;
 	virtual void CallRemoveItem(UEISItemInstance* Item) override;
+	virtual void CallSubtractOrRemoveItem(UEISItemInstance* Item, int Amount) override;
 	
 	UFUNCTION(BlueprintCallable, Category = "Equipment Slot")
 	void EquipSlot(UEISItemInstance* InItemInstance);

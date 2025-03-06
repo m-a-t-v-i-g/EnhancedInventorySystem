@@ -81,7 +81,10 @@ public:
 	TArray<UEISItemInstance*> GetItems() const { return Items; }
 
 protected:
+	virtual void CallAddItem(UEISItemInstance* Item) override;
+	virtual void CallLeaveItem(UEISItemInstance* Item) override;
 	virtual void CallRemoveItem(UEISItemInstance* Item) override;
+	virtual void CallSubtractOrRemoveItem(UEISItemInstance* Item, int Amount) override;
 	
 	UFUNCTION(BlueprintCallable, Category = "Item Container")
 	bool FindAvailablePlace(UEISItemInstance* Item);

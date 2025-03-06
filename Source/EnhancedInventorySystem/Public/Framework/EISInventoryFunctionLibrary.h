@@ -18,7 +18,13 @@ class ENHANCEDINVENTORYSYSTEM_API UEISInventoryFunctionLibrary : public UBluepri
 public:
 	UFUNCTION(BlueprintCallable, Category = "Inventory Function Library")
 	static UEISItemInstance* GenerateItem(UWorld* World, const UEISItemInstance* SourceItem);
-
+		
+	template <class T>
+	static T* GenerateItem(UWorld* World, const UEISItemInstance* SourceItem)
+	{
+		return Cast<T>(GenerateItem(World, SourceItem));
+	}
+	
 	UFUNCTION(BlueprintCallable, Category = "Inventory Function Library|Container")
 	static bool Container_FindAvailablePlace(UEISItemContainer* Container, UEISItemInstance* Item);
 	
@@ -55,6 +61,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Inventory Function Library|Slot")
 	static void MoveItemFromSlotToSlot(UEISEquipmentSlot* SourceSlot, UEISEquipmentSlot* TargetSlot);
 
+	UFUNCTION(BlueprintCallable, Category = "Inventory Manager")
+	static void AddItemInSource(UObject* Source, UEISItemInstance* Item);
+	
+	UFUNCTION(BlueprintCallable, Category = "Inventory Manager")
+	static void LeaveItemInSource(UObject* Source, UEISItemInstance* Item);
+	
 	UFUNCTION(BlueprintCallable, Category = "Inventory Manager")
 	static void RemoveItemFromSource(UObject* Source, UEISItemInstance* Item);
 	

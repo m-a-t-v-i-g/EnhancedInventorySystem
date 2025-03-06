@@ -2,6 +2,14 @@
 
 #include "EISItemRepositoryInterface.h"
 
+void IEISItemRepositoryInterface::CallAddItem(UEISItemInstance* Item)
+{
+}
+
+void IEISItemRepositoryInterface::CallLeaveItem(UEISItemInstance* Item)
+{
+}
+
 void IEISItemRepositoryInterface::CallRemoveItem(UEISItemInstance* Item)
 {
 }

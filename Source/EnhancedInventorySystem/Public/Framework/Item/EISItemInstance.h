@@ -179,7 +179,7 @@ public:
 	void AddToEquipmentSlot(UObject* Owner);
 	virtual void OnAddToEquipmentSlot(UObject* Owner);
 	
-	UFUNCTION(BlueprintImplementableEvent, DisplayName = "AddToEquipmentSlot")
+	UFUNCTION(BlueprintImplementableEvent, DisplayName = "OnAddToEquipmentSlot")
 	void K2_AddToEquipmentSlot(UObject* Owner);
 	
 	UFUNCTION(BlueprintPure, Category = "Item")

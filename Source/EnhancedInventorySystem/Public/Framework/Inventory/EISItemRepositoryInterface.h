@@ -19,6 +19,10 @@ class ENHANCEDINVENTORYSYSTEM_API IEISItemRepositoryInterface
 	GENERATED_BODY()
 
 public:
+	virtual void CallAddItem(UEISItemInstance* Item);
+	
+	virtual void CallLeaveItem(UEISItemInstance* Item);
+	
 	virtual void CallRemoveItem(UEISItemInstance* Item);
 
 	virtual void CallSubtractOrRemoveItem(UEISItemInstance* Item, int Amount);

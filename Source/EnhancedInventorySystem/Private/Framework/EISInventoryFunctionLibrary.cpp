@@ -14,7 +14,7 @@ UEISItemInstance* UEISInventoryFunctionLibrary::GenerateItem(UWorld* World, cons
 	{
 		if (UEISItemInstance* NewItem = NewObject<UEISItemInstance>(World, SourceItem->GetClass(),
 		                                            FName(SourceItem->GetScriptName().ToString() + FString::Printf(
-			                                            TEXT("_object%d"), LastItemId + 1))))
+			                                            TEXT("_instance_%d"), LastItemId + 1))))
 		{
 			LastItemId++;
 			NewItem->Initialize(LastItemId, SourceItem);
@@ -143,15 +143,14 @@ void UEISInventoryFunctionLibrary::MoveItemFromContainerToSlot(UEISItemContainer
 
 	if (Item->GetAmount() > 1)
 	{
-		UEISItemInstance* RemainedItem = GenerateItem(SourceContainer->GetWorld(), Item);
-		if (!RemainedItem)
+		UEISItemInstance* RemainItem = GenerateItem(Item->GetWorld(), Item);
+		if (RemainItem != nullptr)
 		{
-			return;
+			int Amount = Item->GetAmount() - 1;
+			RemainItem->SetAmount(Amount);
+			Container_AddItem(SourceContainer, RemainItem);
 		}
-
-		RemainedItem->SetAmount(Item->GetAmount() - 1);
-		Container_AddItem(SourceContainer, RemainedItem);
-
+		
 		Item->SetAmount(1);
 	}
 
@@ -193,6 +192,22 @@ void UEISInventoryFunctionLibrary::MoveItemFromSlotToSlot(UEISEquipmentSlot* Sou
 	}
 	
 	Slot_EquipItem(TargetSlot, SourceItemInstance);
+}
+
+void UEISInventoryFunctionLibrary::AddItemInSource(UObject* Source, UEISItemInstance* Item)
+{
+	if (auto SourceRep = Cast<IEISItemRepositoryInterface>(Source))
+	{
+		SourceRep->CallAddItem(Item);
+	}
+}
+
+void UEISInventoryFunctionLibrary::LeaveItemInSource(UObject* Source, UEISItemInstance* Item)
+{
+	if (auto SourceRep = Cast<IEISItemRepositoryInterface>(Source))
+	{
+		SourceRep->CallLeaveItem(Item);
+	}
 }
 
 void UEISInventoryFunctionLibrary::RemoveItemFromSource(UObject* Source, UEISItemInstance* Item)

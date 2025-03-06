@@ -128,9 +128,41 @@ UEISItemInstance* UEISItemContainer::FindItemById(int ItemId) const
 	return nullptr;
 }
 
+void UEISItemContainer::CallAddItem(UEISItemInstance* Item)
+{
+	check(Item);
+
+	AddItem(Item);
+}
+
+void UEISItemContainer::CallLeaveItem(UEISItemInstance* Item)
+{
+	check(Item);
+	
+	AddItem(Item);
+}
+
 void UEISItemContainer::CallRemoveItem(UEISItemInstance* Item)
 {
 	RemoveItem(Item);
+}
+
+void UEISItemContainer::CallSubtractOrRemoveItem(UEISItemInstance* Item, int Amount)
+{
+	check(Item);
+
+	if (Contains(Item) && Amount > 0)
+	{
+		int ItemAmount = Item->GetAmount();
+		if (ItemAmount - Amount > 0)
+		{
+			Item->RemoveAmount(Amount);
+		}
+		else
+		{
+			RemoveItem(Item);
+		}
+	}
 }
 
 bool UEISItemContainer::FindAvailablePlace(UEISItemInstance* Item)

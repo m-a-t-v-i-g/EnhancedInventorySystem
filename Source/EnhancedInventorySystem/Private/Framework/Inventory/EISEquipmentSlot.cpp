@@ -48,9 +48,34 @@ bool UEISEquipmentSlot::CanEquipItem(const UEISItemInstance* Item) const
 	return false;
 }
 
+void UEISEquipmentSlot::CallLeaveItem(UEISItemInstance* Item)
+{
+	check(Item);
+	
+	EquipSlot(Item);
+}
+
 void UEISEquipmentSlot::CallRemoveItem(UEISItemInstance* Item)
 {
 	UnequipSlot();
+}
+
+void UEISEquipmentSlot::CallSubtractOrRemoveItem(UEISItemInstance* Item, int Amount)
+{
+	check(Item);
+
+	if (GetItemInstance() == Item && Amount > 0)
+	{
+		int ItemAmount = Item->GetAmount();
+		if (ItemAmount - Amount > 0)
+		{
+			Item->RemoveAmount(Amount);
+		}
+		else
+		{
+			UnequipSlot();
+		}
+	}
 }
 
 void UEISEquipmentSlot::EquipSlot(UEISItemInstance* InItemInstance)
