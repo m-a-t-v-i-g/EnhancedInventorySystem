@@ -32,18 +32,15 @@ void UEISItemAttributeContainer::Initialize()
 		{
 			const FGameplayTag& Tag = Attribute.Key;
 			const FEISItemAttributeEntry& Value = Attribute.Value;
-			Attributes.AddUnique(FEISItemAttributeData(Tag, Value.DefaultValue, Value.MinValue, Value.MaxValue));
+			Attributes.AddUnique(FEISItemAttributeData(Tag, Value));
 		}
 	}
 
-	if (ItemDef->bUseAdditiveAttributes)
+	for (auto Attribute : ItemDef->AdditiveAttributes)
 	{
-		for (auto Attribute : ItemDef->AdditiveAttributes)
-		{
-			const FGameplayTag& Tag = Attribute.Key;
-			const FEISItemAttributeEntry& Value = Attribute.Value;
-			Attributes.AddUnique(FEISItemAttributeData(Tag, Value.DefaultValue, Value.MinValue, Value.MaxValue));
-		}
+		const FGameplayTag& Tag = Attribute.Key;
+		const FEISItemAttributeEntry& Value = Attribute.Value;
+		Attributes.AddUnique(FEISItemAttributeData(Tag, Value));
 	}
 }
 

@@ -37,19 +37,28 @@ struct FEISItemInstanceData
 	int Amount = 1;
 };
 
-USTRUCT()
+USTRUCT(Blueprintable)
 struct FEISItemAttributeEntry
 {
 	GENERATED_USTRUCT_BODY()
 	
-	UPROPERTY(EditDefaultsOnly, Category = "Item Attribute")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Item Attribute")
 	float DefaultValue = 0.0f;
 	
-	UPROPERTY(EditDefaultsOnly, Category = "Item Attribute")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Item Attribute")
 	float MinValue = 0.0f;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Item Attribute")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Item Attribute")
 	float MaxValue = 0.0f;
+	
+	FEISItemAttributeEntry()
+	{
+	}
+
+	FEISItemAttributeEntry(float DefVal, float MinVal, float MaxVal) : DefaultValue(DefVal), MinValue(MinVal),
+	                                                                   MaxValue(MaxVal)
+	{
+	}
 };
 
 USTRUCT(DisplayName = "Item Attribute Data", BlueprintType, Blueprintable)
@@ -67,24 +76,24 @@ struct FEISItemAttributeData
 	{
 	}
 
-	FEISItemAttributeData(const FGameplayTag& AttrTag, float DefVal, float MinVal, float MaxVal) : AttributeTag(AttrTag),
-		Value(DefVal), DefaultValue(DefVal), MinValue(MinVal), MaxValue(MaxVal)
+	FEISItemAttributeData(const FGameplayTag& AttrTag, const FEISItemAttributeEntry& AttrEntry) : AttributeTag(AttrTag),
+		Value(AttrEntry.DefaultValue), ItemAttributeEntry(AttrEntry)
 	{
 	}
 
 	float GetDefaultValue() const
 	{
-		return DefaultValue;
+		return ItemAttributeEntry.DefaultValue;
 	}
 
 	float GetMinValue() const
 	{
-		return MinValue;
+		return ItemAttributeEntry.MinValue;
 	}
 	
 	float GetMaxValue() const
 	{
-		return MaxValue;
+		return ItemAttributeEntry.MaxValue;
 	}
 	
 	bool IsValid() const
@@ -98,14 +107,8 @@ struct FEISItemAttributeData
 	}
 
 private:
-	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	float DefaultValue = 0.0f;
-	
-	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	float MinValue = 0.0f;
-
-	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	float MaxValue = 0.0f;
+	UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	FEISItemAttributeEntry ItemAttributeEntry;
 };
 
 USTRUCT(DisplayName = "Item Attribute Modifier", BlueprintType, Blueprintable)
@@ -291,9 +294,6 @@ public:
 	TArray<TObjectPtr<const UEISItemAttributeAsset>> AttributeSets;
 	
 	UPROPERTY(EditAnywhere, Category = "Attributes")
-	bool bUseAdditiveAttributes = false;
-	
-	UPROPERTY(EditAnywhere, Category = "Attributes", meta = (EditCondition = "bUseAdditiveAttributes"))
 	TMap<FGameplayTag, FEISItemAttributeEntry> AdditiveAttributes;
 	
 	UPROPERTY(EditAnywhere, Category = "Properties|Stacking")
