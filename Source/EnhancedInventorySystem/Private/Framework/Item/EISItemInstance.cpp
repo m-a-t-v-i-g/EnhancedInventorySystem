@@ -137,6 +137,11 @@ void UEISItemAttributeContainer::CalculateAttributes()
 	}
 }
 
+TArray<FEISItemAttributeData> UEISItemAttributeContainer::GetAttributes() const
+{
+	return Attributes;
+}
+
 FEISItemAttributeData UEISItemAttributeContainer::GetAttributeData(FGameplayTag AttributeTag) const
 {
 	for (const FEISItemAttributeData& Attribute : Attributes)
@@ -175,10 +180,7 @@ void UEISItemInstance::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 bool UEISItemInstance::ReplicateSubobjects(UActorChannel* Channel, FOutBunch* Bunch, FReplicationFlags* RepFlags)
 {
 	bool bReplicateSomething = false;
-	if (AttributeContainer)
-	{
-		bReplicateSomething |= Channel->ReplicateSubobject(AttributeContainer.Get(), *Bunch, *RepFlags);
-	}
+	bReplicateSomething |= Channel->ReplicateSubobject(AttributeContainer.Get(), *Bunch, *RepFlags);
 	
 	return bReplicateSomething;
 }
@@ -282,39 +284,29 @@ FEISItemAttributeModifierHandle UEISItemInstance::AddAttributeModifier(const FEI
 
 bool UEISItemInstance::RemoveAttributeModifier(const FEISItemAttributeModifierHandle& ModifyHandle)
 {
-	if (AttributeContainer)
-	{
-		return AttributeContainer->RemoveAttributeModifier(ModifyHandle);
-	}
-	return false;
+	return AttributeContainer->RemoveAttributeModifier(ModifyHandle);
 }
 
 bool UEISItemInstance::ToggleAttributeModifier(const FEISItemAttributeModifierHandle& ModifyHandle, bool bValue)
 {
-	if (AttributeContainer)
-	{
-		return AttributeContainer->ToggleAttributeModifier(ModifyHandle, bValue);
-	}
-	return false;
+	return AttributeContainer->ToggleAttributeModifier(ModifyHandle, bValue);
+}
+
+TArray<FEISItemAttributeData> UEISItemInstance::GetAttributes() const
+{
+	return AttributeContainer->GetAttributes();
 }
 
 FEISItemAttributeData UEISItemInstance::GetAttributeData(FGameplayTag AttributeTag) const
 {
-	if (AttributeContainer)
-	{
-		return AttributeContainer->GetAttributeData(AttributeTag);
-	}
-	return FEISItemAttributeData();
+	return AttributeContainer->GetAttributeData(AttributeTag);
 }
 
 void UEISItemInstance::Initialize(int InItemId, const UEISItemInstance* SourceItem)
 {
 	ItemInstanceData.ItemId = InItemId;
-
-	if (AttributeContainer)
-	{
-		AttributeContainer->Initialize();
-	}
+	
+	AttributeContainer->Initialize();
 	
 	OnInitialize(SourceItem);
 	K2_OnInitialize(SourceItem);

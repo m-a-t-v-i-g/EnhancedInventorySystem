@@ -254,6 +254,7 @@ public:
 	bool ToggleAttributeModifier(const FEISItemAttributeModifierHandle& ModHandle, bool bValue);
 	void CalculateAttributes();
 
+	TArray<FEISItemAttributeData> GetAttributes() const;
 	FEISItemAttributeData GetAttributeData(FGameplayTag AttributeTag) const;
 	
 	UFUNCTION(BlueprintPure, Category = "Attribute Container")
@@ -430,6 +431,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Item|Attributes")
 	bool ToggleAttributeModifier(const FEISItemAttributeModifierHandle& ModifyHandle, bool bValue);
 
+	UFUNCTION(BlueprintPure, Category = "Item|Attributes")
+	TArray<FEISItemAttributeData> GetAttributes() const;
+	
 	UFUNCTION(BlueprintPure, Category = "Item|Attributes")
 	FEISItemAttributeData GetAttributeData(FGameplayTag AttributeTag) const;
 	

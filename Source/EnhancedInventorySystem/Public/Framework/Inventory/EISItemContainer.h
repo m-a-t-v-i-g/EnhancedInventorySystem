@@ -12,7 +12,7 @@
 class UEISInventoryFunctionLibrary;
 class UEISItemInstance;
 
-USTRUCT(BlueprintType)
+USTRUCT(Blueprintable)
 struct FEISItemContainerChangeData
 {
 	GENERATED_USTRUCT_BODY()

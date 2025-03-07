@@ -11,18 +11,18 @@
 class UEISInventoryFunctionLibrary;
 class UEISItemInstance;
 
-USTRUCT()
+USTRUCT(Blueprintable)
 struct FEISEquipmentSlotChangeData
 {
 	GENERATED_USTRUCT_BODY()
 
-	UPROPERTY()
+	UPROPERTY(BlueprintReadOnly)
 	FString SlotName;
 
-	UPROPERTY()
+	UPROPERTY(BlueprintReadOnly)
 	UEISItemInstance* SlotItem = nullptr;
 
-	UPROPERTY()
+	UPROPERTY(BlueprintReadOnly)
 	bool bIsEquipped = false;
 	
 	FEISEquipmentSlotChangeData()
